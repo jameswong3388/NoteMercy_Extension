@@ -4,11 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4416672d-0eaa-405a-8335-da3168bb08a5" name="Changes" comment="Add new feature extraction and emotion/personality labeling routines, including categorization functions and data processing scripts. Introduced raw feature and emotion label lists for model training.">
-      <change afterPath="$PROJECT_DIR$/backend/lib/block_lettering/angularity.m" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/lib/shorthand/smooth_curves.m" afterDir="false" />
+    <list default="true" id="4416672d-0eaa-405a-8335-da3168bb08a5" name="Changes" comment="Add compute_discrete_letter_components function for analyzing letter components in images. This function processes images to identify valid letter components based on area, includes debug visualization options, and returns metrics on detected components.">
+      <change afterPath="$PROJECT_DIR$/backend/lib/cursive/stroke_connectivity_index.m" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/lib/print/letter_size_uniformity.m" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/lib/block_lettering/angular_deviation_index.m" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -68,11 +67,11 @@
 }</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/backend/lib/print" />
       <recent name="$PROJECT_DIR$/backend/legacy" />
       <recent name="$PROJECT_DIR$/backend/lib/legacy" />
       <recent name="$PROJECT_DIR$/backend/lib/cursive" />
       <recent name="$PROJECT_DIR$/backend" />
-      <recent name="$PROJECT_DIR$/backend/atest" />
     </key>
   </component>
   <component name="RunManager" selected="Python.test">
@@ -232,7 +231,23 @@
       <option name="project" value="LOCAL" />
       <updated>1742890156538</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Refactor image processing routines: remove angular deviation index function, add new functions for analyzing block lettering characteristics and computing stroke smoothness. Update workspace configuration to reflect these changes.">
+      <option name="closed" value="true" />
+      <created>1742891314094</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1742891314094</updated>
+    </task>
+    <task id="LOCAL-00006" summary="Add compute_discrete_letter_components function for analyzing letter components in images. This function processes images to identify valid letter components based on area, includes debug visualization options, and returns metrics on detected components.">
+      <option name="closed" value="true" />
+      <created>1742891397824</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1742891397824</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -243,7 +258,9 @@
     <MESSAGE value="Remove obsolete loopiness analysis image from backend assets." />
     <MESSAGE value="Add new image processing functions for angular deviation and flourish extension ratio analysis." />
     <MESSAGE value="Add new feature extraction and emotion/personality labeling routines, including categorization functions and data processing scripts. Introduced raw feature and emotion label lists for model training." />
-    <option name="LAST_COMMIT_MESSAGE" value="Add new feature extraction and emotion/personality labeling routines, including categorization functions and data processing scripts. Introduced raw feature and emotion label lists for model training." />
+    <MESSAGE value="Refactor image processing routines: remove angular deviation index function, add new functions for analyzing block lettering characteristics and computing stroke smoothness. Update workspace configuration to reflect these changes." />
+    <MESSAGE value="Add compute_discrete_letter_components function for analyzing letter components in images. This function processes images to identify valid letter components based on area, includes debug visualization options, and returns metrics on detected components." />
+    <option name="LAST_COMMIT_MESSAGE" value="Add compute_discrete_letter_components function for analyzing letter components in images. This function processes images to identify valid letter components based on area, includes debug visualization options, and returns metrics on detected components." />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/NoteMercy_Extension$categorize.coverage" NAME="categorize Coverage Results" MODIFIED="1742771910241" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/backend" />
