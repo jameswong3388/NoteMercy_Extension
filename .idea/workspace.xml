@@ -4,11 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4416672d-0eaa-405a-8335-da3168bb08a5" name="Changes" comment="Add new functions for analyzing cursive connectivity and letter size uniformity in images. The `compute_cursive_connectivity_index` function evaluates letter components based on connectivity metrics, while the `compute_letter_size_uniformity` function assesses uniformity in letter dimensions and pen pressure. Update workspace configuration to reflect these additions.">
-      <change afterPath="$PROJECT_DIR$/backend/atest/6.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/lib/calligraphic/artistics_consistency.m" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/lib/italic/vertical_stroke_proportion.m" beforeDir="false" afterPath="$PROJECT_DIR$/backend/lib/print/vertical_stroke_proportion.m" afterDir="false" />
+    <list default="true" id="4416672d-0eaa-405a-8335-da3168bb08a5" name="Changes" comment="Add new functions for analyzing artistic consistency and vertical stroke proportions in images. The `compute_artistic_consistency` function evaluates stroke width, transition smoothness, and serif consistency, while the `compute_vertical_stroke_proportion` function assesses the height and ascender ratio of connected components. Update workspace configuration to reflect these additions.">
+      <change afterPath="$PROJECT_DIR$/backend/lib/block_lettering/uppercase_ratio.m" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/lib/print/vertical_alignment_consistency.m" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/lib/print/vertical_stroke_proportion.m" beforeDir="false" afterPath="$PROJECT_DIR$/backend/lib/italic/vertical_stroke_proportion.m" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -256,7 +255,15 @@
       <option name="project" value="LOCAL" />
       <updated>1742903203979</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="Add new functions for analyzing artistic consistency and vertical stroke proportions in images. The `compute_artistic_consistency` function evaluates stroke width, transition smoothness, and serif consistency, while the `compute_vertical_stroke_proportion` function assesses the height and ascender ratio of connected components. Update workspace configuration to reflect these additions.">
+      <option name="closed" value="true" />
+      <created>1742905705698</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1742905705698</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -270,7 +277,8 @@
     <MESSAGE value="Refactor image processing routines: remove angular deviation index function, add new functions for analyzing block lettering characteristics and computing stroke smoothness. Update workspace configuration to reflect these changes." />
     <MESSAGE value="Add compute_discrete_letter_components function for analyzing letter components in images. This function processes images to identify valid letter components based on area, includes debug visualization options, and returns metrics on detected components." />
     <MESSAGE value="Add new functions for analyzing cursive connectivity and letter size uniformity in images. The `compute_cursive_connectivity_index` function evaluates letter components based on connectivity metrics, while the `compute_letter_size_uniformity` function assesses uniformity in letter dimensions and pen pressure. Update workspace configuration to reflect these additions." />
-    <option name="LAST_COMMIT_MESSAGE" value="Add new functions for analyzing cursive connectivity and letter size uniformity in images. The `compute_cursive_connectivity_index` function evaluates letter components based on connectivity metrics, while the `compute_letter_size_uniformity` function assesses uniformity in letter dimensions and pen pressure. Update workspace configuration to reflect these additions." />
+    <MESSAGE value="Add new functions for analyzing artistic consistency and vertical stroke proportions in images. The `compute_artistic_consistency` function evaluates stroke width, transition smoothness, and serif consistency, while the `compute_vertical_stroke_proportion` function assesses the height and ascender ratio of connected components. Update workspace configuration to reflect these additions." />
+    <option name="LAST_COMMIT_MESSAGE" value="Add new functions for analyzing artistic consistency and vertical stroke proportions in images. The `compute_artistic_consistency` function evaluates stroke width, transition smoothness, and serif consistency, while the `compute_vertical_stroke_proportion` function assesses the height and ascender ratio of connected components. Update workspace configuration to reflect these additions." />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/NoteMercy_Extension$categorize.coverage" NAME="categorize Coverage Results" MODIFIED="1742771910241" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/backend" />
