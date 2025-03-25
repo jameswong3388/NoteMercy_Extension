@@ -4,10 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4416672d-0eaa-405a-8335-da3168bb08a5" name="Changes" comment="Add compute_discrete_letter_components function for analyzing letter components in images. This function processes images to identify valid letter components based on area, includes debug visualization options, and returns metrics on detected components.">
-      <change afterPath="$PROJECT_DIR$/backend/lib/cursive/stroke_connectivity_index.m" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/lib/print/letter_size_uniformity.m" afterDir="false" />
+    <list default="true" id="4416672d-0eaa-405a-8335-da3168bb08a5" name="Changes" comment="Add new functions for analyzing cursive connectivity and letter size uniformity in images. The `compute_cursive_connectivity_index` function evaluates letter components based on connectivity metrics, while the `compute_letter_size_uniformity` function assesses uniformity in letter dimensions and pen pressure. Update workspace configuration to reflect these additions.">
+      <change afterPath="$PROJECT_DIR$/backend/atest/6.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/lib/calligraphic/artistics_consistency.m" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/lib/italic/vertical_stroke_proportion.m" beforeDir="false" afterPath="$PROJECT_DIR$/backend/lib/print/vertical_stroke_proportion.m" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -67,11 +68,11 @@
 }</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/backend/atest" />
       <recent name="$PROJECT_DIR$/backend/lib/print" />
       <recent name="$PROJECT_DIR$/backend/legacy" />
       <recent name="$PROJECT_DIR$/backend/lib/legacy" />
       <recent name="$PROJECT_DIR$/backend/lib/cursive" />
-      <recent name="$PROJECT_DIR$/backend" />
     </key>
   </component>
   <component name="RunManager" selected="Python.test">
@@ -247,7 +248,15 @@
       <option name="project" value="LOCAL" />
       <updated>1742891397824</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="Add new functions for analyzing cursive connectivity and letter size uniformity in images. The `compute_cursive_connectivity_index` function evaluates letter components based on connectivity metrics, while the `compute_letter_size_uniformity` function assesses uniformity in letter dimensions and pen pressure. Update workspace configuration to reflect these additions.">
+      <option name="closed" value="true" />
+      <created>1742903203979</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1742903203979</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -260,7 +269,8 @@
     <MESSAGE value="Add new feature extraction and emotion/personality labeling routines, including categorization functions and data processing scripts. Introduced raw feature and emotion label lists for model training." />
     <MESSAGE value="Refactor image processing routines: remove angular deviation index function, add new functions for analyzing block lettering characteristics and computing stroke smoothness. Update workspace configuration to reflect these changes." />
     <MESSAGE value="Add compute_discrete_letter_components function for analyzing letter components in images. This function processes images to identify valid letter components based on area, includes debug visualization options, and returns metrics on detected components." />
-    <option name="LAST_COMMIT_MESSAGE" value="Add compute_discrete_letter_components function for analyzing letter components in images. This function processes images to identify valid letter components based on area, includes debug visualization options, and returns metrics on detected components." />
+    <MESSAGE value="Add new functions for analyzing cursive connectivity and letter size uniformity in images. The `compute_cursive_connectivity_index` function evaluates letter components based on connectivity metrics, while the `compute_letter_size_uniformity` function assesses uniformity in letter dimensions and pen pressure. Update workspace configuration to reflect these additions." />
+    <option name="LAST_COMMIT_MESSAGE" value="Add new functions for analyzing cursive connectivity and letter size uniformity in images. The `compute_cursive_connectivity_index` function evaluates letter components based on connectivity metrics, while the `compute_letter_size_uniformity` function assesses uniformity in letter dimensions and pen pressure. Update workspace configuration to reflect these additions." />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/NoteMercy_Extension$categorize.coverage" NAME="categorize Coverage Results" MODIFIED="1742771910241" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/backend" />
