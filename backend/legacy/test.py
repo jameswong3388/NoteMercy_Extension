@@ -77,6 +77,6 @@ def compute_vertical_stroke_proportion(image_path, debug=False):
 
 if __name__ == "__main__":
     # Replace with your actual image file
-    image_path = "atest/3.png"
+    image_path = "../atest/3.png"
     curviness_results = compute_vertical_stroke_proportion(image_path, debug=True)
     print(curviness_results)

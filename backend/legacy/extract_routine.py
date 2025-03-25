@@ -1,9 +1,9 @@
 import os
 import extract
 
-os.chdir("images")
-files = [f for f in os.listdir('.') if os.path.isfile(f)]
-os.chdir("..")
+os.chdir("../images")
+files = [f for f in os.listdir('..') if os.path.isfile(f)]
+os.chdir("../..")
 
 page_ids = []
 if os.path.isfile("raw_feature_list"):

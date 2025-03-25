@@ -523,7 +523,7 @@ def barometer(image):
 
 ''' main '''
 def main():
-    image = cv2.imread('images/007-0.png')
+    image = cv2.imread('../images/007-0.png')
     cv2.imshow('Original Image', image)
     straightened = straighten(image)
     cv2.imshow('Straightened Image', straightened)
