@@ -4,24 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4416672d-0eaa-405a-8335-da3168bb08a5" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/backend/atest/1.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/atest/2.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/atest/3.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/atest/4.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/atest/5.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/lib/Curvature Continuity.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/lib/Enclosed Loop Ratio.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/lib/Inter-Letter Spacing Uniformity.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/lib/Slant Angle.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/lib/Stroke Connectivity Index.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/lib/Vertical Stroke Proportion.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/test.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/NoteMercy_Extension.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/NoteMercy_Extension.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+    <list default="true" id="4416672d-0eaa-405a-8335-da3168bb08a5" name="Changes" comment="Initial project setup with configuration files, backend image processing scripts, and frontend UI components. Added various utility functions and established project structure.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/extract.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/extract.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/train_emotion_predict.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/train_emotion_predict.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -81,6 +65,8 @@
 }</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/backend/lib/legacy" />
+      <recent name="$PROJECT_DIR$/backend/lib/cursive" />
       <recent name="$PROJECT_DIR$/backend" />
       <recent name="$PROJECT_DIR$/backend/atest" />
       <recent name="$PROJECT_DIR$/backend/test" />
@@ -209,12 +195,25 @@
       <workItem from="1742717819667" duration="1783000" />
       <workItem from="1742771334073" duration="20250000" />
       <workItem from="1742865679863" duration="600000" />
-      <workItem from="1742879346521" duration="3284000" />
+      <workItem from="1742879346521" duration="5352000" />
     </task>
+    <task id="LOCAL-00001" summary="Initial project setup with configuration files, backend image processing scripts, and frontend UI components. Added various utility functions and established project structure.">
+      <option name="closed" value="true" />
+      <created>1742885293489</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1742885293489</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Initial project setup with configuration files, backend image processing scripts, and frontend UI components. Added various utility functions and established project structure." />
+    <option name="LAST_COMMIT_MESSAGE" value="Initial project setup with configuration files, backend image processing scripts, and frontend UI components. Added various utility functions and established project structure." />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/NoteMercy_Extension$categorize.coverage" NAME="categorize Coverage Results" MODIFIED="1742771910241" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/backend" />
