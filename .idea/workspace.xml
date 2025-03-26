@@ -4,10 +4,27 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4416672d-0eaa-405a-8335-da3168bb08a5" name="Changes" comment="Add new functions for analyzing artistic consistency and vertical stroke proportions in images. The `compute_artistic_consistency` function evaluates stroke width, transition smoothness, and serif consistency, while the `compute_vertical_stroke_proportion` function assesses the height and ascender ratio of connected components. Update workspace configuration to reflect these additions.">
-      <change afterPath="$PROJECT_DIR$/backend/lib/block_lettering/uppercase_ratio.m" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/lib/print/vertical_alignment_consistency.m" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/lib/print/vertical_stroke_proportion.m" beforeDir="false" afterPath="$PROJECT_DIR$/backend/lib/italic/vertical_stroke_proportion.m" afterDir="false" />
+    <list default="true" id="4416672d-0eaa-405a-8335-da3168bb08a5" name="Changes" comment="Add main application for handwriting analysis and new function for pen pressure analysis. The `handwritingAnalysisApp` function creates a UI for image upload, preprocessing, and feature extraction.">
+      <change afterPath="$PROJECT_DIR$/backend/lib/shorthand/ligature_frequency.m" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/lib_py/block_lettering/angularity.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/lib_py/block_lettering/pen_pressure.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/lib_py/block_lettering/uppercase_ratio.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/lib_py/calligraphic/artistics_consistency.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/lib_py/calligraphic/flourish_extension_ratio.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/lib_py/calligraphic/stroke_width_variation.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/lib_py/print/discrete_letter.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/lib_py/print/letter_size_uniformity.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/lib_py/print/vertical_alignment_consistency.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/lib_py/shorthand/smooth_curves.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/lib_py/shorthand/stroke_continuity.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app.m" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app.m" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/lib/legacy/Curvature Continuity.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/lib_py/cursive/Curvature Continuity.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/lib/legacy/Enclosed Loop Ratio.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/lib_py/cursive/Enclosed Loop Ratio.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/lib/legacy/Inter-Letter Spacing Uniformity.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/lib_py/italic/Inter-Letter Spacing Uniformity.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/lib/legacy/Slant Angle.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/lib_py/italic/Slant Angle.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/lib/legacy/Stroke Connectivity Index.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/lib_py/cursive/Stroke Connectivity Index.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/lib/legacy/Vertical Stroke Proportion.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/lib_py/italic/Vertical Stroke Proportion.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -45,37 +62,53 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Python.categorize.executor&quot;: &quot;Run&quot;,
-    &quot;Python.extract.executor&quot;: &quot;Run&quot;,
-    &quot;Python.extract_routine.executor&quot;: &quot;Run&quot;,
-    &quot;Python.test.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/Users/jameswong/PycharmProjects/NoteMercy_Extension&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;/Users/jameswong/PycharmProjects/NoteMercy_Extension/frontend/node_modules/typescript/lib&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.angularity.executor": "Run",
+    "Python.artistics_consistency.executor": "Run",
+    "Python.categorize.executor": "Run",
+    "Python.discrete_letter.executor": "Run",
+    "Python.extract.executor": "Run",
+    "Python.extract_routine.executor": "Run",
+    "Python.flourish_extension_ratio.executor": "Run",
+    "Python.pen_pressure.executor": "Run",
+    "Python.smooth_curves.executor": "Run",
+    "Python.stroke_width_variation.executor": "Run",
+    "Python.test.executor": "Run",
+    "Python.uppercase_ratio.executor": "Run",
+    "Python.vertical_alignment_consistency.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "/Users/jameswong/PycharmProjects/NoteMercy_Extension/backend/lib_py/shorthand",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "ts.external.directory.path": "/Users/jameswong/PycharmProjects/NoteMercy_Extension/frontend/node_modules/typescript/lib",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/backend/lib_py/shorthand" />
+      <recent name="$PROJECT_DIR$/backend/lib_py/print" />
+      <recent name="$PROJECT_DIR$/backend/lib_py/calligraphic" />
+      <recent name="$PROJECT_DIR$/backend/lib_py" />
+      <recent name="$PROJECT_DIR$/backend" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/backend/lib_py/italic" />
+      <recent name="$PROJECT_DIR$/backend/lib_py/cursive" />
+      <recent name="$PROJECT_DIR$/backend/lib_py" />
+      <recent name="$PROJECT_DIR$/backend" />
       <recent name="$PROJECT_DIR$/backend/atest" />
-      <recent name="$PROJECT_DIR$/backend/lib/print" />
-      <recent name="$PROJECT_DIR$/backend/legacy" />
-      <recent name="$PROJECT_DIR$/backend/lib/legacy" />
-      <recent name="$PROJECT_DIR$/backend/lib/cursive" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.test">
-    <configuration name="categorize" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+  <component name="RunManager" selected="Python.smooth_curves">
+    <configuration name="discrete_letter" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="NoteMercy_Extension" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -84,12 +117,12 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/backend" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/backend/lib_py/print" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/backend/legacy/categorize.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/backend/lib_py/print/discrete_letter.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -98,7 +131,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="extract" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="flourish_extension_ratio" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="NoteMercy_Extension" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -107,12 +140,12 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/backend" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/backend/lib_py/calligraphic" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/backend/legacy/extract.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/backend/lib_py/calligraphic/flourish_extension_ratio.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -121,7 +154,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="extract_routine" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="smooth_curves" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="NoteMercy_Extension" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -130,12 +163,12 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/backend" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/backend/lib_py/shorthand" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/backend/legacy/extract_routine.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/backend/lib_py/shorthand/smooth_curves.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -144,7 +177,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="test" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="stroke_width_variation" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="NoteMercy_Extension" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -153,12 +186,35 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/backend" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/backend/lib_py/calligraphic" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/backend/legacy/test.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/backend/lib_py/calligraphic/stroke_width_variation.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="vertical_alignment_consistency" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="NoteMercy_Extension" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/backend/lib_py/print" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/backend/lib_py/print/vertical_alignment_consistency.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -169,10 +225,11 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.test" />
-        <item itemvalue="Python.categorize" />
-        <item itemvalue="Python.extract_routine" />
-        <item itemvalue="Python.extract" />
+        <item itemvalue="Python.smooth_curves" />
+        <item itemvalue="Python.vertical_alignment_consistency" />
+        <item itemvalue="Python.discrete_letter" />
+        <item itemvalue="Python.stroke_width_variation" />
+        <item itemvalue="Python.flourish_extension_ratio" />
       </list>
     </recent_temporary>
   </component>
@@ -198,6 +255,11 @@
       <workItem from="1742771334073" duration="20250000" />
       <workItem from="1742865679863" duration="600000" />
       <workItem from="1742879346521" duration="5352000" />
+      <workItem from="1742953660505" duration="8098000" />
+      <workItem from="1742977595501" duration="7000" />
+      <workItem from="1742977606509" duration="228000" />
+      <workItem from="1742977841342" duration="11000" />
+      <workItem from="1742977855615" duration="4546000" />
     </task>
     <task id="LOCAL-00001" summary="Initial project setup with configuration files, backend image processing scripts, and frontend UI components. Added various utility functions and established project structure.">
       <option name="closed" value="true" />
@@ -263,7 +325,23 @@
       <option name="project" value="LOCAL" />
       <updated>1742905705698</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Add new functions for analyzing uppercase ratio, vertical stroke proportion, and vertical alignment consistency in images. The `calculate_uppercase_ratio` function evaluates the ratio of uppercase characters, while `compute_vertical_stroke_proportion` assesses the height and ascender ratio of connected components. The `compute_vertical_alignment_consistency` function measures alignment consistency in handwriting, providing metrics on baseline and x-height deviations. Include debug visualization options for all functions.">
+      <option name="closed" value="true" />
+      <created>1742906603692</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1742906603692</updated>
+    </task>
+    <task id="LOCAL-00010" summary="Add main application for handwriting analysis and new function for pen pressure analysis. The `handwritingAnalysisApp` function creates a UI for image upload, preprocessing, and feature extraction.">
+      <option name="closed" value="true" />
+      <created>1742953949704</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1742953949705</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -278,12 +356,23 @@
     <MESSAGE value="Add compute_discrete_letter_components function for analyzing letter components in images. This function processes images to identify valid letter components based on area, includes debug visualization options, and returns metrics on detected components." />
     <MESSAGE value="Add new functions for analyzing cursive connectivity and letter size uniformity in images. The `compute_cursive_connectivity_index` function evaluates letter components based on connectivity metrics, while the `compute_letter_size_uniformity` function assesses uniformity in letter dimensions and pen pressure. Update workspace configuration to reflect these additions." />
     <MESSAGE value="Add new functions for analyzing artistic consistency and vertical stroke proportions in images. The `compute_artistic_consistency` function evaluates stroke width, transition smoothness, and serif consistency, while the `compute_vertical_stroke_proportion` function assesses the height and ascender ratio of connected components. Update workspace configuration to reflect these additions." />
-    <option name="LAST_COMMIT_MESSAGE" value="Add new functions for analyzing artistic consistency and vertical stroke proportions in images. The `compute_artistic_consistency` function evaluates stroke width, transition smoothness, and serif consistency, while the `compute_vertical_stroke_proportion` function assesses the height and ascender ratio of connected components. Update workspace configuration to reflect these additions." />
+    <MESSAGE value="Add new functions for analyzing uppercase ratio, vertical stroke proportion, and vertical alignment consistency in images. The `calculate_uppercase_ratio` function evaluates the ratio of uppercase characters, while `compute_vertical_stroke_proportion` assesses the height and ascender ratio of connected components. The `compute_vertical_alignment_consistency` function measures alignment consistency in handwriting, providing metrics on baseline and x-height deviations. Include debug visualization options for all functions." />
+    <MESSAGE value="Add main application for handwriting analysis and new function for pen pressure analysis. The `handwritingAnalysisApp` function creates a UI for image upload, preprocessing, and feature extraction." />
+    <option name="LAST_COMMIT_MESSAGE" value="Add main application for handwriting analysis and new function for pen pressure analysis. The `handwritingAnalysisApp` function creates a UI for image upload, preprocessing, and feature extraction." />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/NoteMercy_Extension$categorize.coverage" NAME="categorize Coverage Results" MODIFIED="1742771910241" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/backend" />
+    <SUITE FILE_PATH="coverage/NoteMercy_Extension$pen_pressure.coverage" NAME="pen_pressure Coverage Results" MODIFIED="1742980181181" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/backend/lib_py/block_lettering" />
+    <SUITE FILE_PATH="coverage/NoteMercy_Extension$vertical_alignment_consistency.coverage" NAME="vertical_alignment_consistency Coverage Results" MODIFIED="1742981720965" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/backend/lib_py/print" />
     <SUITE FILE_PATH="coverage/NoteMercy_Extension$extract.coverage" NAME="extract Coverage Results" MODIFIED="1742720132700" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/backend" />
+    <SUITE FILE_PATH="coverage/NoteMercy_Extension$angularity.coverage" NAME="angularity Coverage Results" MODIFIED="1742979964576" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/backend/lib_py/block_lettering" />
+    <SUITE FILE_PATH="coverage/NoteMercy_Extension$artistics_consistency.coverage" NAME="artistics_consistency Coverage Results" MODIFIED="1742980802791" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/backend/lib_py/calligraphic" />
+    <SUITE FILE_PATH="coverage/NoteMercy_Extension$discrete_letter.coverage" NAME="discrete_letter Coverage Results" MODIFIED="1742981417502" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/backend/lib_py/print" />
+    <SUITE FILE_PATH="coverage/NoteMercy_Extension$categorize.coverage" NAME="categorize Coverage Results" MODIFIED="1742771910241" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/backend" />
     <SUITE FILE_PATH="coverage/NoteMercy_Extension$test.coverage" NAME="test Coverage Results" MODIFIED="1742800379097" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/backend" />
+    <SUITE FILE_PATH="coverage/NoteMercy_Extension$uppercase_ratio.coverage" NAME="uppercase_ratio Coverage Results" MODIFIED="1742980360505" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/backend/lib_py/block_lettering" />
+    <SUITE FILE_PATH="coverage/NoteMercy_Extension$flourish_extension_ratio.coverage" NAME="flourish_extension_ratio Coverage Results" MODIFIED="1742981127009" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/backend/lib_py/calligraphic" />
     <SUITE FILE_PATH="coverage/NoteMercy_Extension$extract_routine.coverage" NAME="extract_routine Coverage Results" MODIFIED="1742771750245" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/backend" />
+    <SUITE FILE_PATH="coverage/NoteMercy_Extension$stroke_width_variation.coverage" NAME="stroke_width_variation Coverage Results" MODIFIED="1742981275282" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/backend/lib_py/calligraphic" />
+    <SUITE FILE_PATH="coverage/NoteMercy_Extension$smooth_curves.coverage" NAME="smooth_curves Coverage Results" MODIFIED="1742982008009" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/backend/lib_py/shorthand" />
   </component>
 </project>
