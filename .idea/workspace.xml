@@ -6,6 +6,10 @@
   <component name="ChangeListManager">
     <list default="true" id="4416672d-0eaa-405a-8335-da3168bb08a5" name="Changes" comment="Edit coding style">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/lib_py/cursive/Curvature Continuity.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/lib_py/cursive/Curvature Continuity.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/lib_py/cursive/Enclosed Loop Ratio.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/lib_py/cursive/Enclosed Loop Ratio.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/lib_py/cursive/Stroke Connectivity Index.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/lib_py/cursive/Stroke Connectivity Index.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/lib_py/italic/Inter-Letter Spacing Uniformity.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/lib_py/italic/Inter-Letter Spacing Uniformity.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -88,7 +92,30 @@
       <recent name="$PROJECT_DIR$/backend/atest" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.uppercase_ratio">
+  <component name="RunManager" selected="Python.Vertical Stroke Proportion">
+    <configuration name="Vertical Stroke Proportion" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="NoteMercy_Extension" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/backend/lib_py/italic" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/backend/lib_py/italic/Vertical Stroke Proportion.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="discrete_letter" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="NoteMercy_Extension" />
       <option name="ENV_FILES" value="" />
@@ -127,29 +154,6 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/backend/lib_py/shorthand/smooth_curves.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="stroke_width_variation" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="NoteMercy_Extension" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/backend/lib_py/calligraphic" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/backend/lib_py/calligraphic/stroke_width_variation.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -206,11 +210,11 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.Vertical Stroke Proportion" />
         <item itemvalue="Python.uppercase_ratio" />
         <item itemvalue="Python.smooth_curves" />
         <item itemvalue="Python.vertical_alignment_consistency" />
         <item itemvalue="Python.discrete_letter" />
-        <item itemvalue="Python.stroke_width_variation" />
       </list>
     </recent_temporary>
   </component>
@@ -240,7 +244,7 @@
       <workItem from="1742977595501" duration="7000" />
       <workItem from="1742977606509" duration="228000" />
       <workItem from="1742977841342" duration="11000" />
-      <workItem from="1742977855615" duration="6646000" />
+      <workItem from="1742977855615" duration="8146000" />
     </task>
     <task id="LOCAL-00001" summary="Initial project setup with configuration files, backend image processing scripts, and frontend UI components. Added various utility functions and established project structure.">
       <option name="closed" value="true" />
