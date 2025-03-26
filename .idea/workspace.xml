@@ -4,7 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4416672d-0eaa-405a-8335-da3168bb08a5" name="Changes" comment="Edit coding style" />
+    <list default="true" id="4416672d-0eaa-405a-8335-da3168bb08a5" name="Changes" comment="Edit coding style">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -238,7 +240,7 @@
       <workItem from="1742977595501" duration="7000" />
       <workItem from="1742977606509" duration="228000" />
       <workItem from="1742977841342" duration="11000" />
-      <workItem from="1742977855615" duration="5912000" />
+      <workItem from="1742977855615" duration="6646000" />
     </task>
     <task id="LOCAL-00001" summary="Initial project setup with configuration files, backend image processing scripts, and frontend UI components. Added various utility functions and established project structure.">
       <option name="closed" value="true" />
