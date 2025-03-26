@@ -3,19 +3,39 @@ import matplotlib.pyplot as plt
 from skimage import io, color, filters, morphology, feature, measure
 from scipy.ndimage import distance_transform_edt, convolve
 from math import pi
+import base64
+from io import BytesIO
 
 
-class ArtisticConsistencyAnalyzer:
-    def __init__(self, image_path):
-        self.image_path = image_path
-        self.img = None
+class CalligraphicAnalyzer:
+    def __init__(self, image_input, is_base64=True):
+        """
+        Initializes the CalligraphicAnalyzer with either a base64 encoded image or image path.
+
+        Parameters:
+            image_input (str): Either base64 encoded image string or image file path
+            is_base64 (bool): If True, image_input is treated as base64 string, else as file path
+        """
+        if is_base64:
+            # Decode base64 image
+            img_data = base64.b64decode(image_input)
+            nparr = np.frombuffer(img_data, np.uint8)
+            self.img = io.imread(BytesIO(nparr))
+            if self.img is None:
+                raise ValueError("Error: Could not decode base64 image")
+        else:
+            # Read image from file path
+            self.img = io.imread(image_input)
+            if self.img is None:
+                raise ValueError(f"Error: Could not read image at {image_input}")
+
         self.gray = None
         self.binary = None
         self.skel = None
         self.D = None
 
     @staticmethod
-    def detect_endpoints(skel):
+    def _detect_endpoints(skel):
         """
         Detect endpoints in a binary skeleton.
         An endpoint is defined as a pixel having exactly one neighbor.
@@ -26,7 +46,7 @@ class ArtisticConsistencyAnalyzer:
         return endpoints
 
     @staticmethod
-    def trace_boundary(comp_mask, start_point):
+    def _trace_boundary(comp_mask, start_point):
         """
         Trace a simple boundary (connected pixels) starting from start_point.
         This is a simple greedy algorithm that picks the first unvisited 8-neighbor.
@@ -56,15 +76,10 @@ class ArtisticConsistencyAnalyzer:
                 break
         return np.array(path)
 
-    def load_and_preprocess(self):
+    def _load_and_preprocess(self):
         """
-        Load image from self.image_path and preprocess it.
+        Load image and preprocess it.
         """
-        try:
-            self.img = io.imread(self.image_path)
-        except Exception as e:
-            raise IOError(f"Error: Could not read image at {self.image_path}") from e
-
         # Convert to grayscale if the image is RGB.
         if self.img.ndim == 3:
             if self.img.shape[2] == 4:
@@ -87,11 +102,19 @@ class ArtisticConsistencyAnalyzer:
         self.binary = morphology.opening(self.binary, selem)
         self.binary = morphology.closing(self.binary, selem)
 
-    def compute(self, debug=False):
+    def analyze(self, debug=False):
         """
-        Compute the artistic consistency score along with its feature components.
+        Analyze the image to determine calligraphic characteristics by measuring
+        pressure consistency, transition smoothness, and serif consistency.
+
+        Parameters:
+            debug (bool): If True, generates visualization plots.
+
+        Returns:
+            dict: Metrics including pressure consistency, transition smoothness,
+                  serif consistency, and overall artistic score, plus visualization graphs if debug=True.
         """
-        self.load_and_preprocess()
+        self._load_and_preprocess()
 
         # Skeleton and distance transform.
         self.skel = morphology.skeletonize(self.binary)
@@ -102,13 +125,13 @@ class ArtisticConsistencyAnalyzer:
         widths = widths[widths > 0]  # Remove zeros.
 
         if widths.size == 0:
-            results = {
+            metrics = {
                 'pressure_consistency': 0,
                 'transition_smoothness': 0,
                 'serif_consistency': 0,
                 'overall_artistic_score': 0
             }
-            return results
+            return {'metrics': metrics, 'graphs': []}
 
         width_std = np.std(widths)
         mean_width = np.mean(widths)
@@ -120,12 +143,12 @@ class ArtisticConsistencyAnalyzer:
 
         for region in measure.regionprops(label_img):
             comp_mask = label_img == region.label
-            comp_endpoints_mask = self.detect_endpoints(comp_mask)
+            comp_endpoints_mask = self._detect_endpoints(comp_mask)
             endpoints_coords = np.argwhere(comp_endpoints_mask)
 
             if endpoints_coords.shape[0] > 0:
                 start_point = tuple(endpoints_coords[0])
-                boundary = self.trace_boundary(comp_mask, start_point)
+                boundary = self._trace_boundary(comp_mask, start_point)
                 if boundary.shape[0] < 5:
                     boundary = np.array(np.argwhere(comp_mask))
             else:
@@ -148,7 +171,7 @@ class ArtisticConsistencyAnalyzer:
             transition_smoothness = 0.5  # Default value.
 
         # Serif Detection using Local Edge Density.
-        endpoints_mask = self.detect_endpoints(self.skel)
+        endpoints_mask = self._detect_endpoints(self.skel)
         ep_coords = np.argwhere(endpoints_mask)
         serif_scores = []
         window_size = 7
@@ -175,78 +198,82 @@ class ArtisticConsistencyAnalyzer:
                                   0.4 * transition_smoothness +
                                   0.2 * serif_consistency)
 
-        results = {
+        metrics = {
             'pressure_consistency': pressure_consistency,
             'transition_smoothness': transition_smoothness,
             'serif_consistency': serif_consistency,
             'overall_artistic_score': overall_artistic_score
         }
 
+        result = {
+            'metrics': metrics,
+            'graphs': []
+        }
+
         if debug:
-            self.visualize_results(results, widths, mean_width, endpoints_mask)
-            print(f'Pressure Consistency: {pressure_consistency:.3f}')
-            print(f'Transition Smoothness: {transition_smoothness:.3f}')
-            print(f'Serif Consistency: {serif_consistency:.3f}')
-            print(f'Overall Artistic Score: {overall_artistic_score:.3f}')
+            # Create visualization plots
+            fig, axes = plt.subplots(2, 3, figsize=(15, 10))
+            ax = axes.ravel()
 
-        return results
+            # Original Image
+            ax[0].imshow(self.img, cmap='gray')
+            ax[0].set_title('Original Image')
+            ax[0].axis('off')
 
-    def visualize_results(self, results, widths, mean_width, endpoints_mask):
-        """
-        Create debug visualizations for the analysis.
-        """
-        fig, axes = plt.subplots(2, 3, figsize=(15, 10))
-        ax = axes.ravel()
+            # Binary Image
+            ax[1].imshow(self.binary, cmap='gray')
+            ax[1].set_title('Binary Image')
+            ax[1].axis('off')
 
-        # Original Image.
-        ax[0].imshow(self.img, cmap='gray')
-        ax[0].set_title('Original Image')
-        ax[0].axis('off')
+            # Skeleton with Endpoints
+            ax[2].imshow(self.binary, cmap='gray')
+            skel_y, skel_x = np.nonzero(self.skel)
+            ax[2].scatter(skel_x, skel_y, s=1, c='g')
+            ep_y, ep_x = np.nonzero(endpoints_mask)
+            ax[2].scatter(ep_x, ep_y, s=20, c='b')
+            ax[2].set_title('Skeleton and Endpoints')
+            ax[2].axis('off')
 
-        # Binary Image.
-        ax[1].imshow(self.binary, cmap='gray')
-        ax[1].set_title('Binary Image')
-        ax[1].axis('off')
+            # Heat Map of Stroke Width
+            heatmap = np.zeros_like(self.binary, dtype=float)
+            sy, sx = np.nonzero(self.skel)
+            heatmap[sy, sx] = self.D[sy, sx]
+            im4 = ax[3].imshow(heatmap, cmap='jet')
+            ax[3].set_title('Stroke Width Map')
+            ax[3].axis('off')
+            fig.colorbar(im4, ax=ax[3])
 
-        # Skeleton with Endpoints.
-        ax[2].imshow(self.binary, cmap='gray')
-        skel_y, skel_x = np.nonzero(self.skel)
-        ax[2].scatter(skel_x, skel_y, s=1, c='g')
-        ep_y, ep_x = np.nonzero(endpoints_mask)
-        ax[2].scatter(ep_x, ep_y, s=20, c='b')
-        ax[2].set_title('Skeleton and Endpoints')
-        ax[2].axis('off')
+            # Histogram of Stroke Widths
+            ax[4].hist(widths, bins=20, color='gray', edgecolor='black')
+            ax[4].axvline(mean_width, color='r', linestyle='--', linewidth=2)
+            ax[4].set_title(f'Stroke Width Distribution\nConsistency: {metrics["pressure_consistency"]:.2f}')
 
-        # Heat Map of Stroke Width.
-        heatmap = np.zeros_like(self.binary, dtype=float)
-        sy, sx = np.nonzero(self.skel)
-        heatmap[sy, sx] = self.D[sy, sx]
-        im4 = ax[3].imshow(heatmap, cmap='jet')
-        ax[3].set_title('Stroke Width Map')
-        ax[3].axis('off')
-        fig.colorbar(im4, ax=ax[3])
+            # Feature Scores Display
+            ax[5].axis('off')
+            ax[5].text(0.1, 0.9, f'Pressure: {metrics["pressure_consistency"]:.3f}', fontsize=10)
+            ax[5].text(0.1, 0.75, f'Transition: {metrics["transition_smoothness"]:.3f}', fontsize=10)
+            ax[5].text(0.1, 0.6, f'Serif: {metrics["serif_consistency"]:.3f}', fontsize=10)
+            ax[5].text(0.1, 0.45, f'Overall: {metrics["overall_artistic_score"]:.3f}',
+                       fontsize=12, fontweight='bold')
+            ax[5].set_title('Feature Scores')
 
-        # Histogram of Stroke Widths.
-        ax[4].hist(widths, bins=20, color='gray', edgecolor='black')
-        ax[4].axvline(mean_width, color='r', linestyle='--', linewidth=2)
-        ax[4].set_title(f'Stroke Width Distribution\nConsistency: {results["pressure_consistency"]:.2f}')
+            plt.tight_layout()
+            
+            # Convert plot to base64
+            buf = BytesIO()
+            plt.savefig(buf, format='png', bbox_inches='tight')
+            buf.seek(0)
+            plot_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+            plt.close()
+            
+            result['graphs'].append(plot_base64)
 
-        # Feature Scores Display.
-        ax[5].axis('off')
-        ax[5].text(0.1, 0.9, f'Pressure: {results["pressure_consistency"]:.3f}', fontsize=10)
-        ax[5].text(0.1, 0.75, f'Transition: {results["transition_smoothness"]:.3f}', fontsize=10)
-        ax[5].text(0.1, 0.6, f'Serif: {results["serif_consistency"]:.3f}', fontsize=10)
-        ax[5].text(0.1, 0.45, f'Overall: {results["overall_artistic_score"]:.3f}',
-                   fontsize=12, fontweight='bold')
-        ax[5].set_title('Feature Scores')
-
-        plt.tight_layout()
-        plt.show()
+        return result
 
 
 if __name__ == '__main__':
-    # Replace with your actual image path.
+    # Example with file path
     image_path = '/Users/jameswong/PycharmProjects/NoteMercy_Extension/backend/atest/2.png'
-    analyzer = ArtisticConsistencyAnalyzer(image_path)
-    results = analyzer.compute(debug=True)
+    analyzer = CalligraphicAnalyzer(image_path, is_base64=False)
+    results = analyzer.analyze(debug=True)
     print(results)

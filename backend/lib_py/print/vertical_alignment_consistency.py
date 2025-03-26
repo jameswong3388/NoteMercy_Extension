@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
+import base64
+from io import BytesIO
 
 class VerticalAlignmentAnalyzer:
     """
@@ -9,35 +11,92 @@ class VerticalAlignmentAnalyzer:
     This can help identify print-style writing which tends to have more consistent alignment.
     """
 
-    def compute_vertical_alignment_consistency(self, image_path, debug=False):
+    def __init__(self, image_input, is_base64=True):
         """
-        Compute vertical alignment consistency for handwriting in an image.
+        Initializes the VerticalAlignmentAnalyzer with either a base64 encoded image or image path.
 
         Parameters:
-            image_path (str): Path to the image file.
-            debug (bool): If True, display debug visualizations.
+            image_input (str): Either base64 encoded image string or image file path
+            is_base64 (bool): If True, image_input is treated as base64 string, else as file path
+        """
+        if is_base64:
+            # Decode base64 image
+            img_data = base64.b64decode(image_input)
+            nparr = np.frombuffer(img_data, np.uint8)
+            self.img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            if self.img is None:
+                raise ValueError("Error: Could not decode base64 image")
+        else:
+            # Read image from file path
+            self.img = cv2.imread(image_input)
+            if self.img is None:
+                raise ValueError(f"Error: Could not read image at {image_input}")
+
+        # Convert to grayscale if needed
+        if len(self.img.shape) == 3:
+            self.gray_img = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
+        else:
+            self.gray_img = self.img.copy()
+
+    def _dbscan_cluster(self, values, epsilon):
+        """
+        A simple DBSCAN clustering implementation for 1D data.
+        Clusters values that are within 'epsilon' distance of one another.
+
+        Parameters:
+            values (array-like): 1D array of numeric values.
+            epsilon (float): Tolerance distance for clustering.
 
         Returns:
-            dict: A dictionary with the following keys:
-                - baseline_deviation: Normalized deviation of the baselines.
-                - xheight_deviation: Normalized deviation of the approximate x-height.
-                - overall_alignment_score: A score (0-1) where 1 indicates perfect alignment.
-                - component_count: The number of valid components analyzed.
+            np.ndarray: Array of cluster labels (starting from 1).
         """
-        # Read the image
-        img = cv2.imread(image_path)
-        if img is None:
-            print(f"Error: Could not read image at {image_path}")
-            return {}
+        n = len(values)
+        clusters = np.zeros(n, dtype=int)
+        current_cluster = 0
 
-        # Convert to grayscale if the image is colored
-        if len(img.shape) == 3:
-            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        else:
-            gray = img
+        # Sort values to ease neighbor searching
+        sorted_indices = np.argsort(values)
+        sorted_values = values[sorted_indices]
 
+        for i in range(n):
+            idx = sorted_indices[i]
+            if clusters[idx] != 0:
+                continue
+
+            current_cluster += 1
+            clusters[idx] = current_cluster
+
+            # Find all points within epsilon of the current point
+            queue = []
+            for j in range(n):
+                if abs(sorted_values[j] - sorted_values[i]) <= epsilon:
+                    queue.append(j)
+
+            # Process the queue
+            while queue:
+                current = queue.pop(0)
+                idx_current = sorted_indices[current]
+                if clusters[idx_current] == 0:
+                    clusters[idx_current] = current_cluster
+                    # Check neighbors of the current point
+                    for j in range(n):
+                        if abs(sorted_values[j] - sorted_values[current]) <= epsilon and clusters[sorted_indices[j]] == 0:
+                            queue.append(j)
+
+        return clusters
+
+    def analyze(self, debug=False):
+        """
+        Analyzes the image to determine vertical alignment consistency in handwriting.
+
+        Parameters:
+            debug (bool): If True, generates visualization plots.
+
+        Returns:
+            dict: A dictionary containing metrics and optional visualization graphs.
+        """
         # Apply binary thresholding and invert (using THRESH_BINARY_INV so that ink is white)
-        _, binary = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY_INV)
+        _, binary = cv2.threshold(self.gray_img, 127, 255, cv2.THRESH_BINARY_INV)
         binary_bool = (binary > 0).astype(np.uint8)
 
         # Find connected components using OpenCV
@@ -55,12 +114,17 @@ class VerticalAlignmentAnalyzer:
                 valid_centroids.append(centroids[i])
 
         if len(valid_boxes) == 0:
-            return {
+            metrics = {
                 'baseline_deviation': 0,
                 'xheight_deviation': 0,
                 'overall_alignment_score': 0,
                 'component_count': 0
             }
+            result = {
+                'metrics': metrics,
+                'graphs': []
+            }
+            return result
 
         valid_boxes = np.array(valid_boxes)
         valid_centroids = np.array(valid_centroids)
@@ -69,7 +133,7 @@ class VerticalAlignmentAnalyzer:
         heights = valid_boxes[:, 3]
 
         # Cluster the bottom y-coordinates using a simple 1D DBSCAN
-        bottom_clusters = self.dbscan_cluster(bottoms, epsilon=5)
+        bottom_clusters = self._dbscan_cluster(bottoms, epsilon=5)
 
         # Process each line separately
         line_metrics = []
@@ -120,11 +184,16 @@ class VerticalAlignmentAnalyzer:
             weighted_xheight_dev = 0
             alignment_score = 0
 
-        results = {
+        metrics = {
             'baseline_deviation': weighted_baseline_dev,
             'xheight_deviation': weighted_xheight_dev,
             'overall_alignment_score': alignment_score,
             'component_count': len(valid_boxes)
+        }
+
+        result = {
+            'metrics': metrics,
+            'graphs': []
         }
 
         # Debug visualization if requested
@@ -132,7 +201,7 @@ class VerticalAlignmentAnalyzer:
             fig, axs = plt.subplots(2, 2, figsize=(12, 10))
 
             # Original Image (convert BGR to RGB for correct display)
-            img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            img_rgb = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)
             axs[0, 0].imshow(img_rgb)
             axs[0, 0].set_title('Original Image')
             axs[0, 0].axis('off')
@@ -158,85 +227,42 @@ class VerticalAlignmentAnalyzer:
                 # Draw the baseline
                 line_bottoms = bottoms[indices]
                 baseline = np.median(line_bottoms)
-                axs[1, 0].plot([0, img.shape[1]], [baseline, baseline],
+                axs[1, 0].plot([0, self.img.shape[1]], [baseline, baseline],
                                linestyle='--', color=color, linewidth=1.5)
                 # Draw the approximate x-height line
                 line_tops = tops[indices]
                 line_heights = heights[indices]
                 xheight_line = np.median(line_tops + line_heights * 0.6)
-                axs[1, 0].plot([0, img.shape[1]], [xheight_line, xheight_line],
+                axs[1, 0].plot([0, self.img.shape[1]], [xheight_line, xheight_line],
                                linestyle=':', color=color, linewidth=1.5)
             axs[1, 0].set_title('Character Bounding Boxes & Reference Lines')
             axs[1, 0].axis('off')
 
             # Bar plot for deviation metrics
-            metrics = [weighted_baseline_dev, weighted_xheight_dev, alignment_score]
+            metrics_values = [weighted_baseline_dev, weighted_xheight_dev, alignment_score]
             labels = ['Baseline Dev', 'X-height Dev', 'Alignment Score']
-            axs[1, 1].bar(labels, metrics)
+            axs[1, 1].bar(labels, metrics_values)
             axs[1, 1].set_ylim(0, 1)
             axs[1, 1].set_title('Alignment Metrics')
 
             plt.tight_layout()
-            plt.show()
+            
+            # Convert plot to base64
+            buf = BytesIO()
+            plt.savefig(buf, format='png', bbox_inches='tight')
+            buf.seek(0)
+            plot_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+            plt.close()
+            
+            result['graphs'].append(plot_base64)
 
-            print(f"Baseline deviation (normalized): {weighted_baseline_dev:.3f}")
-            print(f"X-height deviation (normalized): {weighted_xheight_dev:.3f}")
-            print(f"Overall alignment score: {alignment_score:.3f}")
-            print(f"Number of components analyzed: {len(valid_boxes)}")
+        return result
 
-        return results
 
-    def dbscan_cluster(self, values, epsilon):
-        """
-        A simple DBSCAN clustering implementation for 1D data.
-        Clusters values that are within 'epsilon' distance of one another.
-
-        Parameters:
-            values (array-like): 1D array of numeric values.
-            epsilon (float): Tolerance distance for clustering.
-
-        Returns:
-            np.ndarray: Array of cluster labels (starting from 1).
-        """
-        n = len(values)
-        clusters = np.zeros(n, dtype=int)
-        current_cluster = 0
-
-        # Sort values to ease neighbor searching
-        sorted_indices = np.argsort(values)
-        sorted_values = values[sorted_indices]
-
-        for i in range(n):
-            idx = sorted_indices[i]
-            if clusters[idx] != 0:
-                continue
-
-            current_cluster += 1
-            clusters[idx] = current_cluster
-
-            # Find all points within epsilon of the current point
-            queue = []
-            for j in range(n):
-                if abs(sorted_values[j] - sorted_values[i]) <= epsilon:
-                    queue.append(j)
-
-            # Process the queue
-            while queue:
-                current = queue.pop(0)
-                idx_current = sorted_indices[current]
-                if clusters[idx_current] == 0:
-                    clusters[idx_current] = current_cluster
-                    # Check neighbors of the current point
-                    for j in range(n):
-                        if abs(sorted_values[j] - sorted_values[current]) <= epsilon and clusters[sorted_indices[j]] == 0:
-                            queue.append(j)
-
-        return clusters
-
-# === Test Section ===
+# === Example usage ===
 if __name__ == "__main__":
-    analyzer = VerticalAlignmentAnalyzer()
-    # Update the image_path with the path to your test image
+    # Example with file path
     image_path = '/Users/jameswong/PycharmProjects/NoteMercy_Extension/backend/atest/1.png'
-    results = analyzer.compute_vertical_alignment_consistency(image_path, debug=True)
-    print(results)
+    analyzer = VerticalAlignmentAnalyzer(image_path, is_base64=False)
+    results = analyzer.analyze(debug=True)
+    print(results['metrics'])

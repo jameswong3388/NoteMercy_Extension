@@ -3,48 +3,56 @@ import numpy as np
 import matplotlib.pyplot as plt
 from skimage.filters import threshold_otsu
 from skimage.measure import label, regionprops
+import base64
+from io import BytesIO
 
 class FlourishAnalyzer:
-    def __init__(self, image_path, debug=False):
-        self.image_path = image_path
-        self.debug = debug
-        self.img = None
-        self.gray = None
-        self.binary = None
+    def __init__(self, image_input, is_base64=True):
+        """
+        Initializes the FlourishAnalyzer with either a base64 encoded image or image path.
 
-    def read_and_preprocess(self):
-        # Read the image
-        self.img = cv2.imread(self.image_path)
-        if self.img is None:
-            print(f"Error: Could not read image at {self.image_path}")
-            return False
+        Parameters:
+            image_input (str): Either base64 encoded image string or image file path
+            is_base64 (bool): If True, image_input is treated as base64 string, else as file path
+        """
+        if is_base64:
+            # Decode base64 image
+            img_data = base64.b64decode(image_input)
+            nparr = np.frombuffer(img_data, np.uint8)
+            self.img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            if self.img is None:
+                raise ValueError("Error: Could not decode base64 image")
+        else:
+            # Read image from file path
+            self.img = cv2.imread(image_input)
+            if self.img is None:
+                raise ValueError(f"Error: Could not read image at {image_input}")
 
-        # Convert to grayscale if the image is RGB
+        # Convert to grayscale if needed
         if len(self.img.shape) == 3 and self.img.shape[2] == 3:
             self.gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
         else:
-            self.gray = self.img
+            self.gray = self.img.copy()
 
         # Binarize using Otsu thresholding
         thresh = threshold_otsu(self.gray)
         binary = self.gray > thresh
         # Invert the binary image (to mimic MATLAB's inversion)
         self.binary = np.logical_not(binary)
-        return True
 
-    def compute_metrics(self):
+    def _compute_metrics(self):
         # Label connected components and extract region properties
         labeled = label(self.binary)
         props = regionprops(labeled)
         if len(props) == 0:
-            return ({
+            return {
                 'flourish_ratio': 0,
                 'width_ratio': 0,
                 'height_ratio': 0,
                 'core_area': 0,
                 'complexity_ratio': 0,
                 'vertical_proportion': 0
-            }, None, None, None)
+            }, None, None, None
 
         # Find the main letter body (largest connected component)
         main_component = max(props, key=lambda r: r.area)
@@ -93,7 +101,7 @@ class FlourishAnalyzer:
 
         vertical_proportion = (self.binary.shape[0] - high_quant - low_quant) / self.binary.shape[0]
 
-        results = {
+        metrics = {
             'flourish_ratio': flourish_ratio,
             'width_ratio': width_ratio,
             'height_ratio': height_ratio,
@@ -106,9 +114,9 @@ class FlourishAnalyzer:
         # - main_box: bounding box for the main component in (x, y, width, height) format
         # - total_box: overall bounding box (x, y, width, height)
         main_box = (minc, minr, core_width, core_height)
-        return results, vertical_proj, main_box, total_box
+        return metrics, vertical_proj, main_box, total_box
 
-    def debug_plot(self, results, vertical_proj, main_box, total_box):
+    def _generate_debug_plots(self, metrics, vertical_proj, main_box, total_box):
         # Unpack the main bounding box (x, y, width, height)
         x_main, y_main, width_main, height_main = main_box
         # Unpack the total bounding box (x, y, width, height)
@@ -156,36 +164,55 @@ class FlourishAnalyzer:
         plt.subplot(2, 3, (5, 6))
         plt.axis('off')
         text_str = (
-            f"Flourish Ratio: {results['flourish_ratio']:.2f}\n"
-            f"Width Ratio: {results['width_ratio']:.2f}\n"
-            f"Height Ratio: {results['height_ratio']:.2f}\n"
-            f"Core Area: {results['core_area']} pixels\n"
-            f"Complexity Ratio: {results['complexity_ratio']:.2f}\n"
-            f"Vertical Proportion: {results['vertical_proportion']:.2f}"
+            f"Flourish Ratio: {metrics['flourish_ratio']:.2f}\n"
+            f"Width Ratio: {metrics['width_ratio']:.2f}\n"
+            f"Height Ratio: {metrics['height_ratio']:.2f}\n"
+            f"Core Area: {metrics['core_area']} pixels\n"
+            f"Complexity Ratio: {metrics['complexity_ratio']:.2f}\n"
+            f"Vertical Proportion: {metrics['vertical_proportion']:.2f}"
         )
         plt.text(0.1, 0.5, text_str, fontsize=12, transform=plt.gca().transAxes)
         plt.title('Metrics')
 
         plt.tight_layout()
-        plt.show()
+        
+        # Convert plot to base64
+        buf = BytesIO()
+        plt.savefig(buf, format='png', bbox_inches='tight')
+        buf.seek(0)
+        plot_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+        plt.close()
+        
+        return plot_base64
 
-        # Also print out debug information
-        print("\nCalligraphic Analysis Results:")
-        print(f"Flourish extension ratio: {results['flourish_ratio']:.2f}")
-        print(f"Complexity ratio: {results['complexity_ratio']:.2f}")
-        print(f"Vertical proportion: {results['vertical_proportion']:.2f}")
+    def analyze(self, debug=False):
+        """
+        Analyzes the image to determine flourish characteristics by measuring
+        extension ratios and complexity metrics.
 
-    def analyze(self):
-        if not self.read_and_preprocess():
-            return {}
-        results, vertical_proj, main_box, total_box = self.compute_metrics()
-        if self.debug and vertical_proj is not None:
-            self.debug_plot(results, vertical_proj, main_box, total_box)
-        return results
+        Parameters:
+            debug (bool): If True, generates visualization plots.
+
+        Returns:
+            dict: Contains metrics and optional visualization graphs in base64 format
+        """
+        metrics, vertical_proj, main_box, total_box = self._compute_metrics()
+        
+        result = {
+            'metrics': metrics,
+            'graphs': []
+        }
+
+        if debug and vertical_proj is not None:
+            plot_base64 = self._generate_debug_plots(metrics, vertical_proj, main_box, total_box)
+            result['graphs'].append(plot_base64)
+
+        return result
 
 # === Example Usage ===
 if __name__ == "__main__":
+    # Example with file path
     image_path = '/Users/jameswong/PycharmProjects/NoteMercy_Extension/backend/atest/4.png'
-    analyzer = FlourishAnalyzer(image_path, debug=True)
-    flourish_results = analyzer.analyze()
-    print(flourish_results)
+    analyzer = FlourishAnalyzer(image_path, is_base64=False)
+    results = analyzer.analyze(debug=True)
+    print(results)

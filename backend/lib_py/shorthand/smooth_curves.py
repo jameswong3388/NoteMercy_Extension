@@ -4,25 +4,76 @@ import matplotlib.pyplot as plt
 from skimage.morphology import skeletonize
 from skimage.filters import threshold_otsu
 import scipy.interpolate as si
+import base64
+from io import BytesIO
 
 
 class StrokeSmoothnessAnalyzer:
-    def compute_stroke_smoothness(self, image_path, debug=False):
-        # Read and preprocess the image
-        img = cv2.imread(image_path)
-        if img is None:
-            print(f"Error: Could not read image at {image_path}")
-            return {}
+    def __init__(self, image_input, is_base64=True):
+        """
+        Initializes the StrokeSmoothnessAnalyzer with either a base64 encoded image or image path.
 
-        # Convert to grayscale if the image is RGB
-        if len(img.shape) == 3:
-            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        Parameters:
+            image_input (str): Either base64 encoded image string or image file path
+            is_base64 (bool): If True, image_input is treated as base64 string, else as file path
+        """
+        if is_base64:
+            # Decode base64 image
+            img_data = base64.b64decode(image_input)
+            nparr = np.frombuffer(img_data, np.uint8)
+            self.img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            if self.img is None:
+                raise ValueError("Error: Could not decode base64 image")
         else:
-            gray = img
+            # Read image from file path
+            self.img = cv2.imread(image_input)
+            if self.img is None:
+                raise ValueError(f"Error: Could not read image at {image_input}")
 
+        # Convert to grayscale if needed
+        if len(self.img.shape) == 3:
+            self.gray_img = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
+        else:
+            self.gray_img = self.img.copy()
+
+    @staticmethod
+    def _sort_skeleton_points(points):
+        """
+        Sorts skeleton points along the stroke path.
+        Starts with the leftmost point and repeatedly connects to the nearest neighbor.
+        """
+        if len(points) == 0:
+            return points
+
+        # Start with the leftmost point (minimum x-coordinate)
+        idx = np.argmin(points[:, 0])
+        ordered_points = [points[idx]]
+        points = np.delete(points, idx, axis=0)
+
+        # Connect remaining points by nearest neighbor
+        while len(points) > 0:
+            current = ordered_points[-1]
+            distances = np.linalg.norm(points - current, axis=1)
+            idx = np.argmin(distances)
+            ordered_points.append(points[idx])
+            points = np.delete(points, idx, axis=0)
+
+        return np.array(ordered_points)
+
+    def analyze(self, debug=False):
+        """
+        Analyzes the image to determine stroke smoothness characteristics.
+
+        Parameters:
+            debug (bool): If True, generates visualization plots.
+
+        Returns:
+            dict: Metrics including curvature information and smoothness score,
+                  plus visualization graphs if debug=True.
+        """
         # Binarize using Otsu's threshold and invert to match expected format
-        thresh = threshold_otsu(gray)
-        binary = gray > thresh
+        thresh = threshold_otsu(self.gray_img)
+        binary = self.gray_img > thresh
         binary = np.logical_not(binary)
 
         # Compute the skeleton of the writing
@@ -31,14 +82,17 @@ class StrokeSmoothnessAnalyzer:
         # Find skeleton points (note: np.nonzero returns (y, x) indices)
         ys, xs = np.nonzero(skel)
         if len(xs) < 3:
-            return {'avg_curvature_change': 0,
-                    'curvature_variance': 0,
-                    'direction_changes': 0,
-                    'smoothness_score': 0}
+            metrics = {
+                'avg_curvature_change': 0,
+                'curvature_variance': 0,
+                'direction_changes': 0,
+                'smoothness_score': 0
+            }
+            return {'metrics': metrics, 'graphs': []}
 
         # Combine coordinates as [x, y] points and sort them along the stroke path
         points = np.column_stack((xs, ys))
-        ordered_points = self.sort_skeleton_points(points)
+        ordered_points = self._sort_skeleton_points(points)
         x_sorted = ordered_points[:, 0]
         y_sorted = ordered_points[:, 1]
 
@@ -50,7 +104,13 @@ class StrokeSmoothnessAnalyzer:
             spline_x, spline_y = spline
         except Exception as e:
             print(f"Error during spline fitting: {e}")
-            return {}
+            metrics = {
+                'avg_curvature_change': 0,
+                'curvature_variance': 0,
+                'direction_changes': 0,
+                'smoothness_score': 0
+            }
+            return {'metrics': metrics, 'graphs': []}
 
         # Calculate gradients and direction changes
         dx = np.gradient(spline_x)
@@ -76,75 +136,64 @@ class StrokeSmoothnessAnalyzer:
                             max(curvature_variance, epsilon)) ** (1 / 3)
         smoothness_score = min(100, smoothness_score * 10)
 
-        results = {
+        metrics = {
             'avg_curvature_change': avg_curvature_change,
             'curvature_variance': curvature_variance,
             'direction_changes': normalized_direction_changes,
             'smoothness_score': smoothness_score
         }
 
+        result = {
+            'metrics': metrics,
+            'graphs': []
+        }
+
         # Debug visualization if requested
         if debug:
-            fig, axs = plt.subplots(2, 2, figsize=(10, 10))
+            # Create figure with subplots
+            plt.figure("Stroke Smoothness Analysis", figsize=(10, 10))
 
-            # Original image (convert BGR to RGB for correct display)
-            axs[0, 0].imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-            axs[0, 0].set_title("Original Image")
-            axs[0, 0].axis('off')
+            # Original image
+            plt.subplot(2, 2, 1)
+            plt.imshow(cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB))
+            plt.title("Original Image")
+            plt.axis('off')
 
             # Skeleton image
-            axs[0, 1].imshow(skel, cmap='gray')
-            axs[0, 1].set_title("Skeleton")
-            axs[0, 1].axis('off')
+            plt.subplot(2, 2, 2)
+            plt.imshow(skel, cmap='gray')
+            plt.title("Skeleton")
+            plt.axis('off')
 
             # Fitted spline
-            axs[1, 0].plot(spline_x, spline_y, 'b-', linewidth=2)
-            axs[1, 0].set_aspect('equal')
-            axs[1, 0].set_title("Fitted Spline")
+            plt.subplot(2, 2, 3)
+            plt.plot(spline_x, spline_y, 'b-', linewidth=2)
+            plt.set_aspect = 'equal'
+            plt.title("Fitted Spline")
 
             # Curvature changes
-            axs[1, 1].plot(dTheta)
-            axs[1, 1].set_title("Curvature Changes")
+            plt.subplot(2, 2, 4)
+            plt.plot(dTheta)
+            plt.title(f"Curvature Changes\nSmoothness Score: {smoothness_score:.2f}")
 
             plt.tight_layout()
-            plt.show()
+            
+            # Convert plot to base64
+            buf = BytesIO()
+            plt.savefig(buf, format='png', bbox_inches='tight')
+            buf.seek(0)
+            plot_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+            plt.close()
+            
+            result['graphs'].append(plot_base64)
 
-            print(f"Average curvature change: {avg_curvature_change:.3f}")
-            print(f"Curvature variance: {curvature_variance:.3f}")
-            print(f"Normalized direction changes: {normalized_direction_changes:.3f}")
-            print(f"Smoothness score: {smoothness_score:.3f}")
-
-        return results
-
-    @staticmethod
-    def sort_skeleton_points(points):
-        """
-        Sorts skeleton points along the stroke path.
-        Starts with the leftmost point and repeatedly connects to the nearest neighbor.
-        """
-        if len(points) == 0:
-            return points
-
-        # Start with the leftmost point (minimum x-coordinate)
-        idx = np.argmin(points[:, 0])
-        ordered_points = [points[idx]]
-        points = np.delete(points, idx, axis=0)
-
-        # Connect remaining points by nearest neighbor
-        while len(points) > 0:
-            current = ordered_points[-1]
-            distances = np.linalg.norm(points - current, axis=1)
-            idx = np.argmin(distances)
-            ordered_points.append(points[idx])
-            points = np.delete(points, idx, axis=0)
-
-        return np.array(ordered_points)
+        return result
 
 
-# === Example Usage ===
+# === Example usage ===
 if __name__ == '__main__':
-    analyzer = StrokeSmoothnessAnalyzer()
-    # Replace the path with the correct image path on your system
+    # Example with file path
     image_path = '/Users/jameswong/PycharmProjects/NoteMercy_Extension/backend/atest/5.png'
-    results = analyzer.compute_stroke_smoothness(image_path, debug=True)
-    print(results)
+    analyzer = StrokeSmoothnessAnalyzer(image_path, is_base64=False)
+    results = analyzer.analyze(debug=True)
+    print(results['metrics'])
