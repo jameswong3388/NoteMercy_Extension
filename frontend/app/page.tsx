@@ -116,12 +116,25 @@ export default function Home() {
                 </ResizablePanel>
                 <ResizableHandle withHandle/>
                 <ResizablePanel defaultSize={70} minSize={30}>
-                    <ScrollArea className="h-full p-4">
-                        <h2 className="text-lg font-bold mb-4">Handwriting Analysis</h2>
-                        <div className="flex items-center justify-center h-[calc(100%-8rem)] text-muted-foreground">
-                            Upload an image to see handwriting analysis results
-                        </div>
-                    </ScrollArea>
+                    <ResizablePanelGroup direction="vertical" className="h-full">
+                        <ResizablePanel defaultSize={50} minSize={30}>
+                            <ScrollArea className="h-full p-4">
+                                <h2 className="text-lg font-bold mb-4">Extracted Features</h2>
+                                <div className="flex items-center justify-center h-[calc(100%-8rem)] text-muted-foreground">
+                                    Upload an image to see handwriting analysis results
+                                </div>
+                            </ScrollArea>
+                        </ResizablePanel>
+                        <ResizableHandle withHandle />
+                        <ResizablePanel defaultSize={50} minSize={30}>
+                            <ScrollArea className="h-full p-4">
+                                <h2 className="text-lg font-bold mb-4">Handwriting Recognition</h2>
+                                <div className="flex items-center justify-center h-[calc(100%-8rem)] text-muted-foreground">
+                                    Upload an image to see recognized text
+                                </div>
+                            </ScrollArea>
+                        </ResizablePanel>
+                    </ResizablePanelGroup>
                 </ResizablePanel>
             </ResizablePanelGroup>
         </div>
