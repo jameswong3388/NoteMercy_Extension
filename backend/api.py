@@ -3,7 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from backend.helper import preprocess_image
+from helper import preprocess_image
+from lib_py.block_lettering.angularity import BlockLetterAnalyzer
 
 app = FastAPI()
 
@@ -41,9 +42,14 @@ async def analyze_image(request: ImageRequest):
     try:
         # Preprocess the image
         processed_image = preprocess_image(request.image)
+        
+        # Block Lettering
+        analyzer = BlockLetterAnalyzer(request.image)
+        angularity_results = analyzer.analyze(debug=True)
 
         return {
             "processed_image": processed_image,
+            "angularity": angularity_results
         }
 
     except Exception as e:

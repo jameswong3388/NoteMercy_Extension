@@ -1,20 +1,32 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+import base64
+from io import BytesIO
 
 
 class BlockLetterAnalyzer:
-    def __init__(self, image_path):
+    def __init__(self, image_input, is_base64=True):
         """
-        Initializes the BlockLetterAnalyzer with the image path.
+        Initializes the BlockLetterAnalyzer with either a base64 encoded image or image path.
 
         Parameters:
-            image_path (str): Path to the image file.
+            image_input (str): Either base64 encoded image string or image file path
+            is_base64 (bool): If True, image_input is treated as base64 string, else as file path
         """
-        self.image_path = image_path
-        self.img = cv2.imread(self.image_path)
-        if self.img is None:
-            raise ValueError(f"Error: Could not read image at {image_path}")
+        if is_base64:
+            # Decode base64 image
+            img_data = base64.b64decode(image_input)
+            nparr = np.frombuffer(img_data, np.uint8)
+            self.img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            if self.img is None:
+                raise ValueError("Error: Could not decode base64 image")
+        else:
+            # Read image from file path
+            self.img = cv2.imread(image_input)
+            if self.img is None:
+                raise ValueError(f"Error: Could not read image at {image_input}")
+
         # Convert to grayscale if needed
         if len(self.img.shape) == 3 and self.img.shape[2] == 3:
             self.gray_img = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
@@ -80,11 +92,11 @@ class BlockLetterAnalyzer:
         angular deviations and corner features.
 
         Parameters:
-            debug (bool): If True, displays visualization plots.
+            debug (bool): If True, generates visualization plots.
 
         Returns:
             dict: Metrics including average, median, maximum deviation,
-                  number of corners, and number of letter shapes.
+                  number of corners, and number of letter shapes, plus visualization graphs if debug=True.
         """
         # Preprocess: Convert grayscale to binary image
         _, binary = cv2.threshold(self.gray_img, 127, 255, cv2.THRESH_BINARY)
@@ -125,10 +137,17 @@ class BlockLetterAnalyzer:
                 'shape_count': len(valid_contours)
             }
 
-        # Visualize analysis if debug mode is enabled
+        result = {
+            'metrics': metrics,
+            'graphs': []
+        }
+
+        # Generate visualization plots if debug mode is enabled
         if debug:
             # Prepare a RGB version of the image for display
             img_rgb = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)
+            
+            # Create figure with subplots
             plt.figure("Block Letter Analysis", figsize=(10, 8))
 
             # Subplot 1: Original Image
@@ -150,7 +169,6 @@ class BlockLetterAnalyzer:
                 cnt_squeezed = cnt.squeeze()
                 if cnt_squeezed.ndim < 2:
                     continue
-                # Ensure the contour is closed by appending the first point at the end
                 closed = np.vstack([cnt_squeezed, cnt_squeezed[0]])
                 plt.plot(closed[:, 0], closed[:, 1], 'r-', linewidth=2)
             plt.title("Corner Detection")
@@ -166,21 +184,23 @@ class BlockLetterAnalyzer:
 
             plt.tight_layout()
             plt.show()
+            
+            # Convert plot to base64
+            buf = BytesIO()
+            plt.savefig(buf, format='png', bbox_inches='tight')
+            buf.seek(0)
+            plot_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+            plt.close()
+            
+            result['graphs'].append(plot_base64)
 
-            # Print analysis results
-            print("\nBlock Letter Analysis Results:")
-            print(f"Average angle deviation: {metrics['avg_deviation']:.2f}°")
-            print(f"Median angle deviation: {metrics['median_deviation']:.2f}°")
-            print(f"Maximum angle deviation: {metrics['max_deviation']:.2f}°")
-            print(f"Total corners detected: {metrics['corner_count']}")
-            print(f"Number of letter shapes: {metrics['shape_count']}")
-
-        return metrics
+        return result
 
 
 # === Example usage ===
 if __name__ == "__main__":
-    image_path = '/Users/jameswong/PycharmProjects/NoteMercy_Extension/backend/atest/1.png'  # Change this to your image file path
-    analyzer = BlockLetterAnalyzer(image_path)
+    # Example with file path
+    image_path = '/Users/jameswong/PycharmProjects/NoteMercy_Extension/backend/atest/1.png'
+    analyzer = BlockLetterAnalyzer(image_path, is_base64=False)
     results = analyzer.analyze(debug=True)
     print(results)
