@@ -152,7 +152,7 @@ class SlantAngleAnalyzer:
 # === Example usage ===
 if __name__ == "__main__":
     # Example with file path
-    image_path = "atest/3.png"
+    image_path = "/Users/jameswong/PycharmProjects/NoteMercy_Extension/backend/atest/1.png"
     analyzer = SlantAngleAnalyzer(image_path, is_base64=False)
     results = analyzer.analyze(debug=True)
     print(results['metrics'])
