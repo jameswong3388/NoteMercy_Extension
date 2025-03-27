@@ -8,11 +8,11 @@ import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css";
 import {ResizableHandle, ResizablePanel, ResizablePanelGroup} from "@/components/ui/resizable";
 import {ScrollArea} from "@/components/ui/scroll-area";
 import {useState} from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { toast } from "sonner";
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
+import {Button} from "@/components/ui/button";
+import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog";
+import {toast} from "sonner";
 
 interface HandwritingStyle {
     score: number;
@@ -313,39 +313,82 @@ export default function Home() {
                                                 </div>
                                             </CardContent>
                                         </Card>
-                                        
+
                                         <Card>
                                             <CardHeader className="pb-2">
                                                 <CardTitle className="text-lg">Primary Style</CardTitle>
-                                                <CardDescription>Your dominant handwriting characteristic</CardDescription>
+                                                <CardDescription>Your dominant handwriting
+                                                    characteristic</CardDescription>
                                             </CardHeader>
                                             <CardContent>
                                                 {(() => {
-                                                    // Find the highest scoring style
+                                                    // Determine the highest scoring handwriting style
                                                     const sortedStyles = Object.entries(features.handwriting)
                                                         .sort(([, a], [, b]) => b.score - a.score);
-                                                    
                                                     const [topStyle, topData] = sortedStyles[0];
-                                                    const score = (topData.score * 100).toFixed(1);
-                                                    
-                                                    // Style descriptions
-                                                    const styleDescriptions: Record<string, string> = {
-                                                        block_lettering: "Characterized by clear, separated letters with precise angular forms and structured appearance.",
-                                                        cursive: "Flowing handwriting with connected letters and rhythmic patterns that prioritize speed and efficiency.",
-                                                        calligraphic: "Artistic writing with varying line thickness, decorative elements, and intentional stylistic flourishes.",
-                                                        italic: "Slanted writing with a rightward lean and often elongated strokes that create a dynamic appearance.",
-                                                        shorthand: "Abbreviated writing system designed for rapid note-taking with simplified forms and specialized symbols.",
-                                                        print: "Neat, standardized letterforms resembling typeset text with consistent spacing and readability."
+                                                    const numericScore = topData.score * 100;
+                                                    const formattedScore = numericScore.toFixed(1);
+                                                    const circumference = 2 * Math.PI * 48; // For an SVG circle with radius=48
+                                                    const dashOffset = circumference - (numericScore / 100 * circumference);
+
+                                                    // Descriptions for each handwriting style
+                                                    const styleDescriptions = {
+                                                        block_lettering:
+                                                            "Characterized by clear, separated letters with precise angular forms and structured appearance.",
+                                                        cursive:
+                                                            "Flowing handwriting with connected letters and rhythmic patterns that prioritize speed and efficiency.",
+                                                        calligraphic:
+                                                            "Artistic writing with varying line thickness, decorative elements, and intentional stylistic flourishes.",
+                                                        italic:
+                                                            "Slanted writing with a rightward lean and often elongated strokes that create a dynamic appearance.",
+                                                        shorthand:
+                                                            "Abbreviated writing system designed for rapid note-taking with simplified forms and specialized symbols.",
+                                                        print:
+                                                            "Neat, standardized letterforms resembling typeset text with consistent spacing and readability.",
                                                     };
-                                                    
+
                                                     return (
-                                                        <div className="flex flex-col items-center p-4 text-center space-y-4">
-                                                            <div className="text-3xl font-bold capitalize">{topStyle.replace(/_/g, ' ')}</div>
-                                                            <div className="text-4xl font-extrabold text-primary">{score}%</div>
-                                                            <p className="text-muted-foreground">
-                                                                {styleDescriptions[topStyle as keyof typeof styleDescriptions] || 
-                                                                "A distinctive handwriting style with unique characteristics."}
-                                                            </p>
+                                                        <div
+                                                            className="flex flex-col md:flex-row items-center justify-center gap-8 p-4">
+                                                            {/* Circular Progress Indicator */}
+                                                            <div className="relative w-32 h-32">
+                                                                <svg className="w-full h-full transform -rotate-90">
+                                                                    <circle
+                                                                        cx="50%"
+                                                                        cy="50%"
+                                                                        r="48"
+                                                                        strokeWidth="8"
+                                                                        className="text-muted/30"
+                                                                        fill="none"
+                                                                    />
+                                                                    <circle
+                                                                        cx="50%"
+                                                                        cy="50%"
+                                                                        r="48"
+                                                                        strokeWidth="8"
+                                                                        className="text-primary"
+                                                                        fill="none"
+                                                                        style={{
+                                                                            strokeDasharray: circumference,
+                                                                            strokeDashoffset: dashOffset
+                                                                        }}
+                                                                    />
+                                                                </svg>
+                                                                <div
+                                                                    className="absolute inset-0 flex items-center justify-center text-xl font-bold">
+                                                                    {formattedScore}%
+                                                                </div>
+                                                            </div>
+                                                            {/* Style Name and Description */}
+                                                            <div className="text-center md:text-left">
+                                                                <div className="text-3xl font-bold capitalize">
+                                                                    {topStyle.replace(/_/g, ' ')}
+                                                                </div>
+                                                                <p className="mt-2 text-muted-foreground">
+                                                                    {styleDescriptions[topStyle] ||
+                                                                        "A distinctive handwriting style with unique characteristics."}
+                                                                </p>
+                                                            </div>
                                                         </div>
                                                     );
                                                 })()}
