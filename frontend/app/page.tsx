@@ -336,17 +336,17 @@ export default function Home() {
                                                     // Descriptions for each handwriting style
                                                     const styleDescriptions = {
                                                         block_lettering:
-                                                            "Characterized by clear, separated letters with precise angular forms and structured appearance.",
+                                                            "All uppercase, bold, rigid structure.",
                                                         cursive:
-                                                            "Flowing handwriting with connected letters and rhythmic patterns that prioritize speed and efficiency.",
+                                                            "Flowing, connected letters with loops.",
                                                         calligraphic:
-                                                            "Artistic writing with varying line thickness, decorative elements, and intentional stylistic flourishes.",
+                                                            "Artistic strokes, exaggerated flourishes.",
                                                         italic:
-                                                            "Slanted writing with a rightward lean and often elongated strokes that create a dynamic appearance.",
+                                                            "Slanted and semi-connected strokes.",
                                                         shorthand:
-                                                            "Abbreviated writing system designed for rapid note-taking with simplified forms and specialized symbols.",
+                                                            "Abbreviated strokes, symbols, and ligatures",
                                                         print:
-                                                            "Neat, standardized letterforms resembling typeset text with consistent spacing and readability.",
+                                                            "Clearly separated letters, often uniform",
                                                     };
 
                                                     return (
