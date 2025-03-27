@@ -137,14 +137,6 @@ async def analyze_image(request: ImageRequest):
         symbol_density_analyzer = SymbolDensityAnalyzer(request.image, is_base64=True)
         symbol_density_results = symbol_density_analyzer.analyze(debug=True)
 
-        # - Score Calculation - #
-        block_lettering_score = 0
-        cursive_score = 0
-        calligraphic_score = 0
-        italic_score = 0
-        shorthand_score = 0
-        print_score = 0
-
         # --- Score Calculation for Block Lettering --- #
         # Retrieve metrics from the analyzers
         angularity_metrics = angularity_results.get('metrics', {})
