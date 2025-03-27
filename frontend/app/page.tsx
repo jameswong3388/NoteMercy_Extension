@@ -44,6 +44,7 @@ interface HandwritingFeatures {
     vertical_alignment: any;
     letter_size_uniformity: any;
     discrete_letter: any;
+    symbol_density: any,
     processed_image: string;
 }
 
@@ -152,7 +153,8 @@ export default function Home() {
         ],
         "Shorthand": [
             { name: "stroke_continuity", data: features.stroke_continuity },
-            { name: "smooth_curves", data: features.smooth_curves }
+            {name: "smooth_curves", data: features.smooth_curves},
+            {name: "symbol_density", data: features.symbol_density}
         ],
         "Print": [
             { name: "vertical_alignment", data: features.vertical_alignment },
@@ -351,7 +353,7 @@ export default function Home() {
                                                         <div
                                                             className="flex flex-col md:flex-row items-center justify-center gap-8 p-4">
                                                             {/* Circular Progress Indicator */}
-                                                            <div className="relative w-32 h-32">
+                                                            <div className="relative w-32 h-32 border-r-2">
                                                                 <svg className="w-full h-full transform -rotate-90">
                                                                     <circle
                                                                         cx="50%"
