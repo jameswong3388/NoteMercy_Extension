@@ -22,6 +22,7 @@ from lib_py.print.letter_size_uniformity import LetterUniformityAnalyzer
 from lib_py.print.vertical_alignment_consistency import VerticalAlignmentAnalyzer
 from lib_py.shorthand.smooth_curves import StrokeSmoothnessAnalyzer
 from lib_py.shorthand.stroke_continuity import StrokeContinuityAnalyzer
+from lib_py.shorthand.symbol_density import SymbolDensityAnalyzer
 
 app = FastAPI()
 
@@ -80,41 +81,51 @@ async def analyze_image(request: ImageRequest):
         angularity_analyzer = BlockLetterAnalyzer(request.image, is_base64=True)
         angularity_results = angularity_analyzer.analyze(debug=True)
 
-        uppercase_analyzer = UppercaseRatioAnalyzer(request.image, is_base64=True)
-        uppercase_results = uppercase_analyzer.analyze(debug=True)
-
         pen_pressure_analyzer = PenPressureAnalyzer(request.image, is_base64=True)
         pen_pressure_results = pen_pressure_analyzer.analyze(debug=True)
 
-        # # Italic Analysis
-        vertical_stroke_analyzer = VerticalStrokeAnalyzer(request.image, is_base64=True)
-        vertical_stroke_results = vertical_stroke_analyzer.analyze(debug=True)
-
-        slant_angle_analyzer = SlantAngleAnalyzer(request.image, is_base64=True)
-        slant_angle_results = slant_angle_analyzer.analyze(debug=True)
-
-        spacing_analyzer = LetterSpacingAnalyzer(request.image, is_base64=True)
-        spacing_results = spacing_analyzer.analyze(debug=True)
-
-        # Cursive Analysis
-        connectivity_analyzer = StrokeConnectivityAnalyzer(request.image, is_base64=True)
-        connectivity_results = connectivity_analyzer.analyze(debug=True)
-
-        loop_analyzer = EnclosedLoopAnalyzer(request.image, is_base64=True)
-        loop_results = loop_analyzer.analyze(debug=True)
-
-        curvature_analyzer = CursiveCurvatureAnalyzer(request.image, is_base64=True)
-        curvature_results = curvature_analyzer.analyze(debug=True)
+        uppercase_analyzer = UppercaseRatioAnalyzer(request.image, is_base64=True)
+        uppercase_results = uppercase_analyzer.analyze(debug=True)
 
         # Calligraphic Analysis
-        stroke_width_analyzer = StrokeWidthAnalyzer(request.image, is_base64=True)
-        stroke_width_results = stroke_width_analyzer.analyze(debug=True)
+        artistic_analyzer = CalligraphicAnalyzer(request.image, is_base64=True)
+        artistic_results = artistic_analyzer.analyze(debug=True)
 
         flourish_analyzer = FlourishAnalyzer(request.image, is_base64=True)
         flourish_results = flourish_analyzer.analyze(debug=True)
 
-        artistic_analyzer = CalligraphicAnalyzer(request.image, is_base64=True)
-        artistic_results = artistic_analyzer.analyze(debug=True)
+        stroke_width_analyzer = StrokeWidthAnalyzer(request.image, is_base64=True)
+        stroke_width_results = stroke_width_analyzer.analyze(debug=True)
+
+        # Cursive Analysis
+        curvature_analyzer = CursiveCurvatureAnalyzer(request.image, is_base64=True)
+        curvature_results = curvature_analyzer.analyze(debug=True)
+
+        loop_analyzer = EnclosedLoopAnalyzer(request.image, is_base64=True)
+        loop_results = loop_analyzer.analyze(debug=True)
+        
+        connectivity_analyzer = StrokeConnectivityAnalyzer(request.image, is_base64=True)
+        connectivity_results = connectivity_analyzer.analyze(debug=True)
+
+        # Italic Analysis
+        spacing_analyzer = LetterSpacingAnalyzer(request.image, is_base64=True)
+        spacing_results = spacing_analyzer.analyze(debug=True)
+
+        slant_angle_analyzer = SlantAngleAnalyzer(request.image, is_base64=True)
+        slant_angle_results = slant_angle_analyzer.analyze(debug=True)
+
+        vertical_stroke_analyzer = VerticalStrokeAnalyzer(request.image, is_base64=True)
+        vertical_stroke_results = vertical_stroke_analyzer.analyze(debug=True)
+
+        # Print Analysis
+        discrete_letter_analyzer = DiscreteLetterAnalyzer(request.image, is_base64=True)
+        discrete_letter_results = discrete_letter_analyzer.analyze(debug=True)
+
+        letter_size_analyzer = LetterUniformityAnalyzer(request.image, is_base64=True)
+        letter_size_results = letter_size_analyzer.analyze(debug=True)
+
+        vertical_alignment_analyzer = VerticalAlignmentAnalyzer(request.image, is_base64=True)
+        vertical_alignment_results = vertical_alignment_analyzer.analyze(debug=True)
 
         # Shorthand Analysis
         continuity_analyzer = StrokeContinuityAnalyzer(request.image, is_base64=True)
@@ -123,15 +134,8 @@ async def analyze_image(request: ImageRequest):
         smooth_curves_analyzer = StrokeSmoothnessAnalyzer(request.image, is_base64=True)
         smooth_curves_results = smooth_curves_analyzer.analyze(debug=True)
 
-        # Print Analysis
-        vertical_alignment_analyzer = VerticalAlignmentAnalyzer(request.image, is_base64=True)
-        vertical_alignment_results = vertical_alignment_analyzer.analyze(debug=True)
-
-        letter_size_analyzer = LetterUniformityAnalyzer(request.image, is_base64=True)
-        letter_size_results = letter_size_analyzer.analyze(debug=True)
-
-        discrete_letter_analyzer = DiscreteLetterAnalyzer(request.image, is_base64=True)
-        discrete_letter_results = discrete_letter_analyzer.analyze(debug=True)
+        symbol_density_analyzer = SymbolDensityAnalyzer(request.image, is_base64=True)
+        symbol_density_results = symbol_density_analyzer.analyze(debug=True)
 
         # - Score Calculation - #
         block_lettering_score = 0
@@ -167,6 +171,113 @@ async def analyze_image(request: ImageRequest):
         # Combined block lettering score (equal weights)
         block_lettering_score = (angularity_score + pen_pressure_score + uppercase_score) / 3
 
+        # --- Score Calculation for Calligraphic --- #
+        # Retrieve metrics from the analyzers
+        artistic_metrics = artistic_results.get('metrics', {})
+        flourish_metrics = flourish_results.get('metrics', {})
+        stroke_width_metrics = stroke_width_results.get('metrics', {})
+
+        # Artistic consistency: higher consistency suggests calligraphic training
+        artistic_consistency = artistic_metrics.get('artistic_index', 0)
+        artistic_score = min(1, max(0, artistic_consistency))
+
+        # Flourish extension: higher ratio suggests more calligraphic features
+        flourish_ratio = flourish_metrics.get('flourish_ratio', 0)
+        flourish_score = min(1, max(0, flourish_ratio))
+        
+        # Stroke width variation: higher variation suggests calligraphic style
+        width_variation = stroke_width_metrics.get('width_variation_index', 0)
+        width_score = min(1, max(0, width_variation))
+
+        # Combined calligraphic score (equal weights)
+        calligraphic_score = (width_score + flourish_score + artistic_score) / 3
+
+        # --- Score Calculation for Cursive --- #
+        # Retrieve metrics from the analyzers
+        curvature_metrics = curvature_results.get('metrics', {})
+        loop_metrics = loop_results.get('metrics', {})
+        connectivity_metrics = connectivity_results.get('metrics', {})
+
+        # Curvature continuity: higher continuity indicates cursive writing
+        curvature_continuity = curvature_metrics.get('curvature_index', 0)
+        curvature_score = min(1, max(0, curvature_continuity))
+        
+        # Stroke connectivity: higher connectivity index indicates more cursive writing
+        connectivity_index = connectivity_metrics.get('connectivity_index', 0)
+        connectivity_score = min(1, max(0, connectivity_index))
+
+        # Enclosed loop ratio: higher ratio indicates more cursive features
+        loop_ratio = loop_metrics.get('enclosed_loop_ratio', 0)
+        loop_score = min(1, max(0, loop_ratio))
+
+        # Combined cursive score (equal weights)
+        cursive_score = (connectivity_score + loop_score + curvature_score) / 3
+
+         # --- Score Calculation for Italic --- #
+        # Retrieve metrics from the analyzers
+        spacing_metrics = spacing_results.get('metrics', {})
+        slant_metrics = slant_angle_results.get('metrics', {})
+        vertical_stroke_metrics = vertical_stroke_results.get('metrics', {})
+
+        # Letter spacing: uniform spacing contributes to italic appearance
+        spacing_uniformity = spacing_metrics.get('spacing_uniformity', 0)
+        spacing_score = min(1, max(0, spacing_uniformity))
+
+        # Slant angle: higher angle (within range) indicates italic writing
+        slant_angle = abs(slant_metrics.get('avg_slant_angle', 0))
+        # Normalize: typically italic is around 15-30 degrees
+        slant_score = min(1, max(0, slant_angle / 25)) if slant_angle <= 45 else max(0, 1 - ((slant_angle - 45) / 45))
+        
+        # Vertical stroke proportion: lower proportion suggests more italic style
+        vertical_proportion = vertical_stroke_metrics.get('vertical_proportion', 1)
+        vertical_score = min(1, max(0, 1 - vertical_proportion))
+        
+        # Combined italic score (equal weights)
+        italic_score = (vertical_score + slant_score + spacing_score) / 3
+
+        # --- Score Calculation for Print --- #
+        # Retrieve metrics from the analyzers
+        vertical_alignment_metrics = vertical_alignment_results.get('metrics', {})
+        letter_size_metrics = letter_size_results.get('metrics', {})
+        discrete_letter_metrics = discrete_letter_results.get('metrics', {})
+
+        # Vertical alignment: higher alignment indicates print writing
+        alignment_index = vertical_alignment_metrics.get('alignment_index', 0)
+        alignment_score = min(1, max(0, alignment_index))
+
+        # Letter size uniformity: higher uniformity indicates print
+        size_uniformity = letter_size_metrics.get('size_uniformity', 0)
+        size_score = min(1, max(0, size_uniformity))
+
+        # Discrete letters: higher discreteness indicates print over cursive
+        letter_discreteness = discrete_letter_metrics.get('discrete_index', 0)
+        discrete_score = min(1, max(0, letter_discreteness))
+
+        # Combined print score (equal weights)
+        print_score = (alignment_score + size_score + discrete_score) / 3
+
+        # --- Score Calculation for Shorthand --- #
+        # Retrieve metrics from the analyzers
+        smooth_curves_metrics = smooth_curves_results.get('metrics', {})
+        continuity_metrics = continuity_results.get('metrics', {})
+        symbol_density_metrics = symbol_density_results.get('metrics', {}) 
+
+        # Smooth curves: higher smoothness indicates shorthand writing
+        curve_smoothness = smooth_curves_metrics.get('smoothness_index', 0)
+        curve_score = min(1, max(0, curve_smoothness))
+
+        # Stroke continuity: higher continuity indicates shorthand
+        continuity_index = continuity_metrics.get('continuity_index', 0)
+        continuity_score = min(1, max(0, continuity_index))
+
+        # Symbol density: higher density indicates shorthand
+        density_index = symbol_density_metrics.get('density_index', 0)
+        density_score = min(1, max(0, density_index)) 
+        
+        # Combined shorthand score (equal weights)
+        shorthand_score = (continuity_score + curve_score + density_score) / 3 
+        
+
         # Convert all results to Python native types
         response = {
             "processed_image": processed_image,
@@ -175,29 +286,31 @@ async def analyze_image(request: ImageRequest):
             "uppercase_ratio": convert_numpy_types(uppercase_results),
             "pen_pressure": convert_numpy_types(pen_pressure_results),
 
-            # italic"
-            "vertical_stroke_proportion": convert_numpy_types(vertical_stroke_results),
-            "slant_angle": convert_numpy_types(slant_angle_results),
-            "inter_letter_spacing": convert_numpy_types(spacing_results),
+            # calligraphic"
+            "stroke_width_variation": convert_numpy_types(stroke_width_results),
+            "flourish_extension": convert_numpy_types(flourish_results),
+            "artistic_consistency": convert_numpy_types(artistic_results),
 
             # cursive"
             "stroke_connectivity": convert_numpy_types(connectivity_results),
             "enclosed_loop_ratio": convert_numpy_types(loop_results),
             "curvature_continuity": convert_numpy_types(curvature_results),
 
-            # calligraphic"
-            "stroke_width_variation": convert_numpy_types(stroke_width_results),
-            "flourish_extension": convert_numpy_types(flourish_results),
-            "artistic_consistency": convert_numpy_types(artistic_results),
+            # italic"
+            "vertical_stroke_proportion": convert_numpy_types(vertical_stroke_results),
+            "slant_angle": convert_numpy_types(slant_angle_results),
+            "inter_letter_spacing": convert_numpy_types(spacing_results),
+
+             # print
+            "vertical_alignment": convert_numpy_types(vertical_alignment_results),
+            "letter_size_uniformity": convert_numpy_types(letter_size_results),
+            "discrete_letter": convert_numpy_types(discrete_letter_results),            
 
             # shorthand
             "stroke_continuity": convert_numpy_types(continuity_results),
             "smooth_curves": convert_numpy_types(smooth_curves_results),
-
-            # print
-            "vertical_alignment": convert_numpy_types(vertical_alignment_results),
-            "letter_size_uniformity": convert_numpy_types(letter_size_results),
-            "discrete_letter": convert_numpy_types(discrete_letter_results),
+            "symbol_density": convert_numpy_types(symbol_density_results),
+           
 
             "handwriting": {
                 "block_lettering": {
