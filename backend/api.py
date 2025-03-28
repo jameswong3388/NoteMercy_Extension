@@ -286,16 +286,43 @@ async def analyze_image(request: ImageRequest):
         symbol_density_metrics = symbol_density_results.get('metrics', {}) 
 
         # Smooth curves: higher smoothness indicates shorthand writing
-        curve_smoothness = smooth_curves_metrics.get('smoothness_index', 0)
-        curve_score = min(1, max(0, curve_smoothness))
+        avg_angle_change = smooth_curves_metrics.get('avg_abs_angle_change', 1.0)  # Default assumes very unsmooth
+
+        # Define a threshold for max average angle change (in radians) considered "smooth enough".
+        # e.g., 0.5 radians is about 28.6 degrees average change between spline segments.
+        # A lower threshold makes the smoothness requirement stricter. Needs tuning.
+        SMOOTHNESS_THRESHOLD_RAD = 0.3
+
+        # Calculate score: linearly decrease from 1 (at 0 change) to 0 (at threshold).
+        # score = 1 - (value / threshold)
+        curve_score = max(0.0, 1.0 - (avg_angle_change / SMOOTHNESS_THRESHOLD_RAD))
 
         # Stroke continuity: higher continuity indicates shorthand
-        continuity_index = continuity_metrics.get('continuity_index', 0)
-        continuity_score = min(1, max(0, continuity_index))
+        # Using metrics from the updated StrokeContinuityAnalyzer
+        num_endpoints = continuity_metrics.get('num_endpoints', 0)
+        num_components = continuity_metrics.get('num_components', 0)
+
+        if num_components > 0:
+            # Calculate ratio of endpoints per component.
+            # Lower values (e.g., approaching 0 for loops, 2 for simple lines) suggest more continuity.
+            # Higher values suggest more breaks or complex/fragmented components.
+            endpoint_ratio = num_endpoints / num_components
+
+            # Define a threshold for the ratio. Ratios above this are considered highly discontinuous.
+            # A higher threshold is more lenient. Needs tuning based on expected shorthand characteristics.
+            # Example: If a ratio of 6 (e.g., 3 separate short lines) is considered discontinuous.
+            CONTINUITY_ENDPOINT_THRESHOLD = 6.0
+
+            # Calculate score: Higher score for lower ratios (more continuous).
+            # Linearly decreases from 1 (at ratio 0) to 0 (at or above the threshold).
+            continuity_score = max(0.0, 1.0 - (endpoint_ratio / CONTINUITY_ENDPOINT_THRESHOLD))
+        else:
+            # No components found (e.g., blank image or processing error), implies zero continuity.
+            continuity_score = 0.0
 
         # Symbol density: higher density indicates shorthand
         density_index = symbol_density_metrics.get('density_index', 0)
-        density_score = min(1, max(0, density_index)) 
+        density_score = min(1, max(0, density_index))
         
         # Combined shorthand score (equal weights)
         shorthand_score = (continuity_score + curve_score + density_score) / 3 
