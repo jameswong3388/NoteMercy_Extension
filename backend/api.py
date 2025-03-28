@@ -139,7 +139,9 @@ async def analyze_image(request: ImageRequest):
         symbol_density_analyzer = SymbolDensityAnalyzer(request.image, is_base64=True)
         symbol_density_results = symbol_density_analyzer.analyze(debug=True)
 
-        # --- Score Calculation for Block Lettering --- #
+        # =====================================================
+        # === SCORE CALCULATION FOR BLOCK LETTERING STYLE ===
+        # =====================================================
         # Retrieve metrics from the analyzers
         angularity_metrics = angularity_results.get('metrics', {})
         pen_pressure_metrics = pen_pressure_results.get('metrics', {})
@@ -165,7 +167,9 @@ async def analyze_image(request: ImageRequest):
         # Combined block lettering score (equal weights)
         block_lettering_score = (angularity_score + pen_pressure_score + uppercase_score) / 3
 
-        # --- Score Calculation for Calligraphic --- #
+        # =====================================================
+        # === SCORE CALCULATION FOR CALLIGRAPHIC HANDWRITING STYLE ===
+        # =====================================================
         # Retrieve metrics from the analyzers
         artistic_metrics = artistic_results.get('metrics', {})
         flourish_metrics = flourish_results.get('metrics', {})
@@ -186,7 +190,9 @@ async def analyze_image(request: ImageRequest):
         # Combined calligraphic score (equal weights)
         calligraphic_score = (width_score + flourish_score + artistic_score) / 3
 
-        # --- Score Calculation for Cursive --- #
+        # =====================================================
+        # === SCORE CALCULATION FOR CURSIVE HANDWRITING STYLE ===
+        # =====================================================
         # Retrieve metrics from the analyzers
         curvature_metrics = curvature_results.get('metrics', {})
         loop_metrics = loop_results.get('metrics', {})
@@ -207,7 +213,9 @@ async def analyze_image(request: ImageRequest):
         # Combined cursive score (equal weights)
         cursive_score = (connectivity_score + loop_score + curvature_score) / 3
 
-         # --- Score Calculation for Italic --- #
+        # =====================================================
+        # === SCORE CALCULATION FOR ITALIC HANDWRITING STYLE ===
+        # =====================================================
         # Retrieve metrics from the analyzers
         spacing_metrics = spacing_results.get('metrics', {})
         slant_metrics = slant_angle_results.get('metrics', {})
@@ -237,7 +245,9 @@ async def analyze_image(request: ImageRequest):
         # Combined italic score (equal weights)
         italic_score = (vertical_score + slant_score + spacing_score) / 3
 
-        # --- Score Calculation for Print --- #
+        # =====================================================
+        # === SCORE CALCULATION FOR PRINT HANDWRITING STYLE ===
+        # =====================================================
         # Retrieve metrics from the analyzers
         vertical_alignment_metrics = vertical_alignment_results.get('metrics', {})
         letter_size_metrics = letter_size_results.get('metrics', {})
@@ -258,7 +268,9 @@ async def analyze_image(request: ImageRequest):
         # Combined print score (equal weights)
         print_score = (alignment_score + size_score + discrete_score) / 3
 
-        # --- Score Calculation for Shorthand --- #
+        # =====================================================
+        # === SCORE CALCULATION FOR SHORTHAND HANDWRITING STYLE ===
+        # =====================================================
         # Retrieve metrics from the analyzers
         smooth_curves_metrics = smooth_curves_results.get('metrics', {})
         continuity_metrics = continuity_results.get('metrics', {})
