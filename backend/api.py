@@ -254,19 +254,28 @@ async def analyze_image(request: ImageRequest):
         discrete_letter_metrics = discrete_letter_results.get('metrics', {})
 
         # Vertical alignment: higher alignment indicates print writing
-        alignment_index = vertical_alignment_metrics.get('alignment_index', 0)
-        alignment_score = min(1, max(0, alignment_index))
+        overall_align_score = vertical_alignment_metrics.get('overall_alignment_score', 0.0)
+        height_consistency = vertical_alignment_metrics.get('height_consistency', 1.0)  # Default to max inconsistency
+        consistency_score = max(0.0, 1.0 - height_consistency)  # Higher score = better consistency
+
+        # Combine alignment and consistency (e.g., average them)
+        combined_alignment_score = (overall_align_score + consistency_score) / 2.0
 
         # Letter size uniformity: higher uniformity indicates print
-        size_uniformity = letter_size_metrics.get('size_uniformity', 0)
+        height_uniformity = letter_size_metrics.get('height_uniformity', 0)
+        width_uniformity = letter_size_metrics.get('width_uniformity', 0)
+        aspect_ratio_uniformity = letter_size_metrics.get('aspect_ratio_uniformity', 0)
+        size_uniformity = (height_uniformity + width_uniformity + aspect_ratio_uniformity) / 3
         size_score = min(1, max(0, size_uniformity))
 
         # Discrete letters: higher discreteness indicates print over cursive
-        letter_discreteness = discrete_letter_metrics.get('discrete_index', 0)
-        discrete_score = min(1, max(0, letter_discreteness))
+        num_components = discrete_letter_metrics.get('num_components', 0)
+        total_components = discrete_letter_metrics.get('total_components', 0)
+        discrete_index = num_components / total_components if total_components > 0 else 0
+        discrete_score = min(1, max(0, discrete_index))
 
         # Combined print score (equal weights)
-        print_score = (alignment_score + size_score + discrete_score) / 3
+        print_score = (combined_alignment_score + size_score + discrete_score) / 3
 
         # =====================================================
         # === SCORE CALCULATION FOR SHORTHAND HANDWRITING STYLE ===
