@@ -61,6 +61,8 @@ def convert_numpy_types(obj):
         return int(obj)
     elif isinstance(obj, np.floating):
         return float(obj)
+    elif isinstance(obj, np.bool_):
+        return bool(obj)
     elif isinstance(obj, np.ndarray):
         return obj.tolist()
     elif isinstance(obj, dict):
@@ -212,13 +214,21 @@ async def analyze_image(request: ImageRequest):
         vertical_stroke_metrics = vertical_stroke_results.get('metrics', {})
 
         # Letter spacing: uniform spacing contributes to italic appearance
-        spacing_uniformity = spacing_metrics.get('spacing_uniformity', 0)
-        spacing_score = min(1, max(0, spacing_uniformity))
+        spacing_is_uniform = spacing_metrics.get('is_uniform')
+        if spacing_is_uniform is None:
+            # Not enough gaps to determine uniformity; assign a neutral score.
+            spacing_score = 0.5
+        else:
+            spacing_score = 1.0 if spacing_is_uniform else 0.0
 
         # Slant angle: higher angle (within range) indicates italic writing
-        slant_angle = abs(slant_metrics.get('avg_slant_angle', 0))
-        # Normalize: typically italic is around 15-30 degrees
-        slant_score = min(1, max(0, slant_angle / 25)) if slant_angle <= 45 else max(0, 1 - ((slant_angle - 45) / 45))
+        vertical_slant = abs(slant_metrics.get('vertical_slant', 0))
+        italic_threshold = slant_metrics.get('italic_threshold', 8)
+        slant_std = slant_metrics.get('slant_std', 0)
+
+        slant_score = min(1.0, vertical_slant / (italic_threshold + 5))
+        if slant_std > 10:
+            slant_score *= 0.85  # penalize unstable slants
         
         # Vertical stroke proportion: lower proportion suggests more italic style
         vertical_proportion = vertical_stroke_metrics.get('vertical_proportion', 1)

@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="NoteMercy_Extension" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="FAI" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="NoteMercy_Extension" project-jdk-type="Python SDK" />
 </project>

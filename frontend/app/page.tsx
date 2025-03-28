@@ -334,7 +334,7 @@ export default function Home() {
                                                     const dashOffset = circumference - (numericScore / 100 * circumference);
 
                                                     // Descriptions for each handwriting style
-                                                    const styleDescriptions = {
+                                                    const styleDescriptions: Record<string, string> = {
                                                         block_lettering:
                                                             "All uppercase, bold, rigid structure.",
                                                         cursive:
@@ -445,7 +445,7 @@ export default function Home() {
                             <div className="space-y-4">
                                 <div className="bg-muted p-4 rounded-lg">
                                     <h3 className="font-semibold mb-2">Data</h3>
-                                    <pre className="text-sm overflow-auto max-h-40">
+                                    <pre className="text-sm overflow-auto max-h-40 whitespace-pre-wrap break-words">
                                         {JSON.stringify(selectedFeatureData.metrics || selectedFeatureData, null, 2)}
                                     </pre>
                                 </div>
@@ -453,11 +453,11 @@ export default function Home() {
                                 <div className="bg-card border rounded-lg p-4">
                                     <h3 className="font-semibold mb-4">Graph Visualization</h3>
                                     {selectedFeatureData.graphs && selectedFeatureData.graphs.length > 0 ? (
-                                        <div className="flex justify-center">
+                                        <div className="flex justify-center overflow-hidden">
                                             <img
                                                 src={`data:image/png;base64,${selectedFeatureData.graphs[0]}`}
                                                 alt={`${selectedFeature} graph`}
-                                                className="max-w-full max-h-[400px]"
+                                                className="max-w-full object-contain max-h-[400px]"
                                             />
                                         </div>
                                     ) : (
