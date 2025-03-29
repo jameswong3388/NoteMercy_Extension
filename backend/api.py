@@ -105,7 +105,7 @@ async def analyze_image(request: ImageRequest):
 
         loop_analyzer = EnclosedLoopAnalyzer(request.image, is_base64=True)
         loop_results = loop_analyzer.analyze(debug=True)
-        
+
         connectivity_analyzer = StrokeConnectivityAnalyzer(request.image, is_base64=True)
         connectivity_results = connectivity_analyzer.analyze(debug=True)
 
@@ -182,7 +182,7 @@ async def analyze_image(request: ImageRequest):
         # Flourish extension: higher ratio suggests more calligraphic features
         flourish_ratio = flourish_metrics.get('flourish_ratio', 0)
         flourish_score = min(1, max(0, flourish_ratio))
-        
+
         # Stroke width variation: higher variation suggests calligraphic style
         width_variation = stroke_width_metrics.get('width_variation_index', 0)
         width_score = min(1, max(0, width_variation))
@@ -198,13 +198,52 @@ async def analyze_image(request: ImageRequest):
         loop_metrics = loop_results.get('metrics', {})
         connectivity_metrics = connectivity_results.get('metrics', {})
 
-        # Curvature continuity: higher continuity indicates cursive writing
-        curvature_continuity = curvature_metrics.get('curvature_index', 0)
-        curvature_score = min(1, max(0, curvature_continuity))
-        
-        # Stroke connectivity: higher connectivity index indicates more cursive writing
-        connectivity_index = connectivity_metrics.get('connectivity_index', 0)
-        connectivity_score = min(1, max(0, connectivity_index))
+        # --- Curvature Score Calculation ---
+        # Use average normalized segment length from CursiveCurvatureAnalyzer.
+        # Hypothesis: Smoother cursive curves are approximated by longer segments.
+        # We normalize this length against a threshold to get a score from 0 to 1.
+        avg_norm_seg_len = curvature_metrics.get('avg_normalized_segment_length', 0.0)
+
+        # Define a threshold for average segment length (as fraction of image height)
+        # that corresponds to a maximum score (e.g., 1.0). This is a tunable parameter.
+        # Lengths above this will also get a score of 1.0.
+        # Example: If avg segment length is 5% of image height, score is 1.0.
+        AVG_LENGTH_THRESHOLD_FOR_MAX_SCORE = 0.05  # Tunable: adjust based on testing
+
+        if AVG_LENGTH_THRESHOLD_FOR_MAX_SCORE > 0:
+            # Linearly scale the score from 0 up to the threshold.
+            curvature_score = min(1.0, max(0.0, avg_norm_seg_len / AVG_LENGTH_THRESHOLD_FOR_MAX_SCORE))
+        else:
+            # Avoid division by zero; if threshold is 0, score is 1 only if length is > 0.
+            curvature_score = 1.0 if avg_norm_seg_len > 0 else 0.0
+        # --- End of Updated Curvature Score Calculation ---
+
+        # Lower 'average_components_per_word' means MORE connected (more cursive).
+        # We need to map this to a score where 1 is highly connected and 0 is disconnected.
+
+        # Define thresholds based on typical observations or the classify_connectivity function:
+        # - A word being a single component (avg_comps=1) is highly cursive. Score = 1.
+        # - Words averaging many components (e.g., >= 8) are very print-like. Score = 0.
+        MIN_COMPONENTS_FOR_MAX_SCORE = 1.0  # Below this, score is 1
+        MAX_COMPONENTS_FOR_MIN_SCORE = 8.0  # At or above this, score is 0
+
+        avg_comps_per_word = connectivity_metrics.get('average_components_per_word', None)
+        word_count = connectivity_metrics.get('word_count', 0)
+
+        connectivity_score = 0.0  # Default score if no words or components detected
+
+        if word_count > 0 and avg_comps_per_word is not None:
+            if avg_comps_per_word <= MIN_COMPONENTS_FOR_MAX_SCORE:
+                connectivity_score = 1.0
+            elif avg_comps_per_word >= MAX_COMPONENTS_FOR_MIN_SCORE:
+                connectivity_score = 0.0
+            else:
+                # Linear interpolation between the thresholds
+                # Score decreases as avg_comps_per_word increases
+                connectivity_score = (MAX_COMPONENTS_FOR_MIN_SCORE - avg_comps_per_word) / \
+                                     (MAX_COMPONENTS_FOR_MIN_SCORE - MIN_COMPONENTS_FOR_MAX_SCORE)
+                # Ensure score is clamped just in case (shouldn't be needed with checks above)
+                connectivity_score = min(1.0, max(0.0, connectivity_score))
 
         # Enclosed loop ratio: higher ratio indicates more cursive features
         loop_ratio = loop_metrics.get('enclosed_loop_ratio', 0)
@@ -237,11 +276,31 @@ async def analyze_image(request: ImageRequest):
         slant_score = min(1.0, vertical_slant / (italic_threshold + 5))
         if slant_std > 10:
             slant_score *= 0.85  # penalize unstable slants
-        
-        # Vertical stroke proportion: lower proportion suggests more italic style
-        vertical_proportion = vertical_stroke_metrics.get('vertical_proportion', 1)
-        vertical_score = min(1, max(0, 1 - vertical_proportion))
-        
+
+        # --- Vertical Stroke Proportion Score ---
+        # Using metrics from the new VerticalStrokeAnalyzer: median_height, max_height, ascender_ratio
+        # A higher ascender_ratio (max_height / median_height) indicates more pronounced difference
+        # between x-height and ascender/capital height, common in italic, cursive, calligraphic styles.
+        # We assume that for italic, a significant ratio (e.g., > 1.5) is more characteristic than a ratio near 1 (like print/block).
+        # Let's normalize the score based on the ascender_ratio.
+        ascender_ratio = vertical_stroke_metrics.get('ascender_ratio',
+                                                     1.0)  # Default to 1 (uniform) if not found or median_height is 0
+
+        # Define thresholds for scoring:
+        baseline_ratio = 1.2  # Ratios below this (close to uniform height) get low scores.
+        target_ratio_for_max_score = 3.0  # Ratios at or above this get a score of 1. Ratios between baseline and target are scaled linearly.
+
+        if ascender_ratio <= baseline_ratio:
+            vertical_score = 0.0  # Ratio indicates uniform height, less likely italic
+        elif ascender_ratio >= target_ratio_for_max_score:
+            vertical_score = 1.0  # Ratio is high, consistent with distinct vertical zones
+        else:
+            # Linear scaling between baseline and target
+            vertical_score = (ascender_ratio - baseline_ratio) / (target_ratio_for_max_score - baseline_ratio)
+
+        # Ensure score is clamped between 0 and 1 (though logic above should handle it)
+        vertical_score = min(1.0, max(0.0, vertical_score))
+
         # Combined italic score (equal weights)
         italic_score = (vertical_score + slant_score + spacing_score) / 3
 
@@ -283,7 +342,7 @@ async def analyze_image(request: ImageRequest):
         # Retrieve metrics from the analyzers
         smooth_curves_metrics = smooth_curves_results.get('metrics', {})
         continuity_metrics = continuity_results.get('metrics', {})
-        symbol_density_metrics = symbol_density_results.get('metrics', {}) 
+        symbol_density_metrics = symbol_density_results.get('metrics', {})
 
         # Smooth curves: higher smoothness indicates shorthand writing
         avg_angle_change = smooth_curves_metrics.get('avg_abs_angle_change', 1.0)  # Default assumes very unsmooth
@@ -323,10 +382,10 @@ async def analyze_image(request: ImageRequest):
         # Symbol density: higher density indicates shorthand
         density_index = symbol_density_metrics.get('density_index', 0)
         density_score = min(1, max(0, density_index))
-        
+
         # Combined shorthand score (equal weights)
-        shorthand_score = (continuity_score + curve_score + density_score) / 3 
-        
+        shorthand_score = (continuity_score + curve_score + density_score) / 3
+
 
         # Convert all results to Python native types
         response = {
@@ -354,13 +413,13 @@ async def analyze_image(request: ImageRequest):
              # print
             "vertical_alignment": convert_numpy_types(vertical_alignment_results),
             "letter_size_uniformity": convert_numpy_types(letter_size_results),
-            "discrete_letter": convert_numpy_types(discrete_letter_results),            
+            "discrete_letter": convert_numpy_types(discrete_letter_results),
 
             # shorthand
             "stroke_continuity": convert_numpy_types(continuity_results),
             "smooth_curves": convert_numpy_types(smooth_curves_results),
             "symbol_density": convert_numpy_types(symbol_density_results),
-           
+
 
             "handwriting": {
                 "block_lettering": {
