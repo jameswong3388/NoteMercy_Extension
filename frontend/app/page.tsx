@@ -16,10 +16,12 @@ import {toast} from "sonner";
 
 interface HandwritingStyle {
     score: number;
+    component_scores?: Record<string, number>;
 }
 
 interface HandwritingFeatures {
-    handwriting: {
+    processed_image: string;
+    handwriting_style_scores: {
         block_lettering: HandwritingStyle;
         cursive: HandwritingStyle;
         calligraphic: HandwritingStyle;
@@ -27,32 +29,39 @@ interface HandwritingFeatures {
         shorthand: HandwritingStyle;
         print: HandwritingStyle;
     };
-    // block lettering
-    angularity: any;
-    aspect_ratio: any;
-    loop_detection: any;
-    // italic
-    vertical_stroke_proportion: any;
-    slant_angle: any;
-    inter_letter_spacing: any;
-    // cursive
-    stroke_connectivity: any;
-    enclosed_loop_ratio: any;
-    curvature_continuity: any;
-    stroke_consistency: any;
-    // calligraphic
-    stroke_width_variation: any;
-    continuous_part_coverage: any;
-    right_angle_corner_detection: any;
-    // shorthand
-    stroke_continuity: any;
-    smooth_curves: any;
-    symbol_density: any;
-    // print
-    vertical_alignment: any;
-    letter_size_uniformity: any;
-    discrete_letter: any,
-    processed_image: string;
+    analysis_details: {
+        block_lettering: {
+            angularity: any;
+            aspect_ratio: any;
+            loop_detection: any;
+        };
+        italic: {
+            vertical_stroke_proportion: any;
+            slant_angle: any;
+            inter_letter_spacing: any;
+        };
+        cursive: {
+            stroke_connectivity: any;
+            enclosed_loop_ratio: any;
+            curvature_continuity: any;
+            stroke_consistency: any;
+        };
+        calligraphic: {
+            stroke_width_variation: any;
+            continuous_part_coverage: any;
+            right_angle_corner_detection: any;
+        };
+        shorthand: {
+            stroke_continuity: any;
+            smooth_curves: any;
+            symbol_density: any;
+        };
+        print: {
+            vertical_alignment: any;
+            letter_size_uniformity: any;
+            discrete_letter: any;
+        };
+    };
 }
 
 // Register FilePond plugins
@@ -126,8 +135,8 @@ export default function Home() {
     };
 
     // Function to handle feature selection and display graph
-    const handleFeatureSelect = (featureName: string, featureData: any) => {
-        setSelectedFeature(featureName);
+    const handleFeatureSelect = (featureName: string, featureData: any, group: string) => {
+        setSelectedFeature(`${group}.${featureName}`);
         setShowFeatureDialog(true);
     };
 
@@ -139,41 +148,55 @@ export default function Home() {
     // Group all features for easy access
     const featureGroups = features ? {
         "Block Lettering": [
-            { name: "angularity", data: features.angularity },
-            { name: "uppercase_ratio", data: features.aspect_ratio },
-            { name: "pen_pressure", data: features.loop_detection }
+            { name: "angularity", data: features.analysis_details.block_lettering.angularity },
+            { name: "aspect_ratio", data: features.analysis_details.block_lettering.aspect_ratio },
+            { name: "loop_detection", data: features.analysis_details.block_lettering.loop_detection }
         ],
         "Italic": [
-            { name: "vertical_stroke_proportion", data: features.vertical_stroke_proportion },
-            { name: "slant_angle", data: features.slant_angle },
-            { name: "inter_letter_spacing", data: features.inter_letter_spacing }
+            { name: "vertical_stroke_proportion", data: features.analysis_details.italic.vertical_stroke_proportion },
+            { name: "slant_angle", data: features.analysis_details.italic.slant_angle },
+            { name: "inter_letter_spacing", data: features.analysis_details.italic.inter_letter_spacing }
         ],
         "Cursive": [
-            { name: "stroke_connectivity", data: features.stroke_connectivity },
-            { name: "enclosed_loop_ratio", data: features.enclosed_loop_ratio },
-            { name: "curvature_continuity", data: features.curvature_continuity },
-            { name: "stroke_consistency", data: features.stroke_consistency }
+            { name: "stroke_connectivity", data: features.analysis_details.cursive.stroke_connectivity },
+            { name: "enclosed_loop_ratio", data: features.analysis_details.cursive.enclosed_loop_ratio },
+            { name: "curvature_continuity", data: features.analysis_details.cursive.curvature_continuity },
+            { name: "stroke_consistency", data: features.analysis_details.cursive.stroke_consistency }
         ],
         "Calligraphic": [
-            { name: "stroke_width_variation", data: features.stroke_width_variation },
-            { name: "continuous_part_coverage", data: features.continuous_part_coverage },
-            { name: "right_angle_corner_detection", data: features.right_angle_corner_detection }
+            { name: "stroke_width_variation", data: features.analysis_details.calligraphic.stroke_width_variation },
+            { name: "continuous_part_coverage", data: features.analysis_details.calligraphic.continuous_part_coverage },
+            { name: "right_angle_corner_detection", data: features.analysis_details.calligraphic.right_angle_corner_detection }
         ],
         "Shorthand": [
-            { name: "stroke_continuity", data: features.stroke_continuity },
-            {name: "smooth_curves", data: features.smooth_curves},
-            {name: "symbol_density", data: features.symbol_density}
+            { name: "stroke_continuity", data: features.analysis_details.shorthand.stroke_continuity },
+            { name: "smooth_curves", data: features.analysis_details.shorthand.smooth_curves },
+            { name: "symbol_density", data: features.analysis_details.shorthand.symbol_density }
         ],
         "Print": [
-            { name: "vertical_alignment", data: features.vertical_alignment },
-            { name: "letter_size_uniformity", data: features.letter_size_uniformity },
-            { name: "discrete_letter", data: features.discrete_letter }
+            { name: "vertical_alignment", data: features.analysis_details.print.vertical_alignment },
+            { name: "letter_size_uniformity", data: features.analysis_details.print.letter_size_uniformity },
+            { name: "discrete_letter", data: features.analysis_details.print.discrete_letter }
         ]
     } : null;
 
     // Get selected feature data
-    const selectedFeatureData = selectedFeature && features ?
-        Object.entries(features).find(([key]) => key === selectedFeature)?.[1] : null;
+    const getSelectedFeatureData = () => {
+        if (!selectedFeature || !features) return null;
+        
+        const [group, feature] = selectedFeature.split('.');
+        if (!group || !feature) return null;
+        
+        const groupKey = group.toLowerCase().replace(/ /g, '_') as keyof typeof features.analysis_details;
+        const featureGroup = features.analysis_details[groupKey];
+        
+        if (!featureGroup) return null;
+        
+        // Type assertion to handle feature access
+        return (featureGroup as Record<string, any>)[feature] || null;
+    };
+    
+    const selectedFeatureData = getSelectedFeatureData();
 
     return (
         <div className="h-screen p-4">
@@ -251,7 +274,7 @@ export default function Home() {
                                                         <Card
                                                             key={feature.name}
                                                             className="cursor-pointer hover:bg-muted/50 transition-colors"
-                                                            onClick={() => handleFeatureSelect(feature.name, feature.data)}
+                                                            onClick={() => handleFeatureSelect(feature.name, feature.data, group)}
                                                         >
                                                             <CardHeader className="py-3">
                                                                 <CardTitle className="text-base">{formatFeatureName(feature.name)}</CardTitle>
@@ -294,8 +317,8 @@ export default function Home() {
                                                 <CardDescription>Analysis of your handwriting style characteristics</CardDescription>
                                             </CardHeader>
                                             <CardContent>
-                                                <div className="space-y-4">
-                                                    {Object.entries(features.handwriting).map(([style, data]) => {
+                                                <div className="space-y-6">
+                                                    {Object.entries(features.handwriting_style_scores).map(([style, data]) => {
                                                         const score = (data.score * 100);
                                                         // Generate appropriate color based on score
                                                         const getProgressColor = (score: number) => {
@@ -307,15 +330,39 @@ export default function Home() {
                                                         
                                                         return (
                                                             <div key={style} className="space-y-1">
-                                                                <div className="flex justify-between items-center">
-                                                                    <span className="capitalize font-medium text-sm">{style.replace(/_/g, ' ')}</span>
-                                                                    <span className="font-semibold text-sm">{score.toFixed(1)}%</span>
-                                                                </div>
-                                                                <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                                                                    <div 
-                                                                        className={`h-full ${getProgressColor(score)} transition-all duration-500 ease-out`}
-                                                                        style={{ width: `${score}%` }}
-                                                                    ></div>
+                                                                <div 
+                                                                    className="relative group cursor-pointer"
+                                                                    title="Hover for component scores"
+                                                                >
+                                                                    <div className="flex justify-between items-center">
+                                                                        <span className="capitalize font-medium text-sm">{style.replace(/_/g, ' ')}</span>
+                                                                        <span className="font-semibold text-sm">{score.toFixed(1)}%</span>
+                                                                    </div>
+                                                                    <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                                                                        <div 
+                                                                            className={`h-full ${getProgressColor(score)} transition-all duration-500 ease-out`}
+                                                                            style={{ width: `${score}%` }}
+                                                                        ></div>
+                                                                    </div>
+                                                                    
+                                                                    {data.component_scores && Object.keys(data.component_scores).length > 0 && (
+                                                                        <div className="absolute right-0 top-full mt-1 w-64 z-10 bg-card shadow-lg rounded-md p-3 border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none">
+                                                                            <h4 className="text-xs font-medium mb-2">Component Scores:</h4>
+                                                                            <div className="grid grid-cols-1 gap-y-1.5 text-xs">
+                                                                                {Object.entries(data.component_scores).map(([componentName, componentScore]) => {
+                                                                                    const formattedScore = (componentScore as number * 100).toFixed(1);
+                                                                                    return (
+                                                                                        <div key={componentName} className="flex justify-between">
+                                                                                            <span className="text-muted-foreground capitalize">
+                                                                                                {componentName.replace(/_/g, ' ')}:
+                                                                                            </span>
+                                                                                            <span className="font-medium">{formattedScore}%</span>
+                                                                                        </div>
+                                                                                    );
+                                                                                })}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         );
@@ -333,7 +380,7 @@ export default function Home() {
                                             <CardContent>
                                                 {(() => {
                                                     // Determine the highest scoring handwriting style
-                                                    const sortedStyles = Object.entries(features.handwriting)
+                                                    const sortedStyles = Object.entries(features.handwriting_style_scores)
                                                         .sort(([, a], [, b]) => b.score - a.score);
                                                     const [topStyle, topData] = sortedStyles[0];
                                                     const numericScore = topData.score * 100;
@@ -404,32 +451,6 @@ export default function Home() {
                                                 })()}
                                             </CardContent>
                                         </Card>
-
-                                        <Card>
-                                            <CardHeader className="pb-2">
-                                                <CardTitle className="text-lg">Visual Characteristics</CardTitle>
-                                                <CardDescription>Key features detected in your handwriting</CardDescription>
-                                            </CardHeader>
-                                            <CardContent>
-                                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 py-2">
-                                                    {[
-                                                        { name: "Slant", icon: "↗️", value: features.slant_angle?.metrics?.average_angle || "Neutral", description: "Direction of letter tilt" },
-                                                        { name: "Pressure", icon: "👆", value: features.pen_pressure?.metrics?.pressure_level || "Medium", description: "Force applied while writing" },
-                                                        { name: "Spacing", icon: "⟷", value: features.inter_letter_spacing?.metrics?.spacing_type || "Regular", description: "Space between letters" },
-                                                        { name: "Size", icon: "🔍", value: features.letter_size_uniformity?.metrics?.size_category || "Medium", description: "Overall letter size" },
-                                                        { name: "Connectivity", icon: "🔗", value: features.stroke_connectivity?.metrics?.connectivity_type || "Mixed", description: "How letters connect" },
-                                                        { name: "Consistency", icon: "📏", value: features.artistic_consistency?.metrics?.consistency_level || "Regular", description: "Writing regularity" }
-                                                    ].map((item) => (
-                                                        <div key={item.name} className="bg-muted/40 rounded-lg p-3 flex flex-col items-center text-center">
-                                                            <div className="text-2xl mb-1">{item.icon}</div>
-                                                            <h4 className="font-medium text-sm">{item.name}</h4>
-                                                            <div className="font-bold text-sm mt-1">{item.value}</div>
-                                                            <div className="text-xs text-muted-foreground mt-1">{item.description}</div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </CardContent>
-                                        </Card>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col items-center justify-center h-[calc(100%-8rem)] text-muted-foreground space-y-4">
@@ -446,7 +467,9 @@ export default function Home() {
             <Dialog open={showFeatureDialog} onOpenChange={setShowFeatureDialog}>
                 <DialogContent className="max-w-3xl">
                     <DialogHeader>
-                        <DialogTitle>{selectedFeature ? formatFeatureName(selectedFeature) : "Feature Details"}</DialogTitle>
+                        <DialogTitle>
+                            {selectedFeature ? formatFeatureName(selectedFeature.split('.')[1] || '') : "Feature Details"}
+                        </DialogTitle>
                     </DialogHeader>
                     <div className="mt-4">
                         {selectedFeatureData && (
@@ -464,7 +487,7 @@ export default function Home() {
                                         <div className="flex justify-center overflow-hidden">
                                             <img
                                                 src={`data:image/png;base64,${selectedFeatureData.graphs[0]}`}
-                                                alt={`${selectedFeature} graph`}
+                                                alt={`${selectedFeature?.split('.')[1]} graph`}
                                                 className="max-w-full object-contain max-h-[400px]"
                                             />
                                         </div>

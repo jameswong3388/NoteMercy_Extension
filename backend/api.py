@@ -1,8 +1,8 @@
+import numpy as np
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-import numpy as np
 
 from helper import preprocess_image
 from lib_py.block_lettering.angularity import AngularityAnalyzer
@@ -30,12 +30,12 @@ app = FastAPI()
 # Add CORS middleware with more specific configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000"],  # Allow your frontend origin
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
-    expose_headers=["Content-Type"],
-    max_age=3600,
+    allow_methods=["GET", "POST", "OPTIONS"],  # Allow POST and OPTIONS for preflight
+    allow_headers=["Content-Type", "Authorization"],  # Allow necessary headers
+    expose_headers=["Content-Type"],  # Expose headers if needed by frontend
+    max_age=3600,  # Cache preflight response for 1 hour
 )
 
 
@@ -43,15 +43,16 @@ class ImageRequest(BaseModel):
     image: str  # base64 encoded image
 
 
+# Define OPTIONS route handler for CORS preflight requests
 @app.options("/api/v1/extract")
 async def options_extract():
     return JSONResponse(
         content={},
         headers={
-            "Access-Control-Allow-Origin": "http://localhost:3000",
+            "Access-Control-Allow-Origin": "http://localhost:3000",  # Match your frontend origin
             "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type",
-            "Access-Control-Max-Age": "3600",
+            "Access-Control-Allow-Headers": "Content-Type",  # Explicitly allow Content-Type
+            "Access-Control-Max-Age": "3600",  # Cache preflight response
         }
     )
 
@@ -77,425 +78,561 @@ def convert_numpy_types(obj):
 async def analyze_image(request: ImageRequest):
     try:
         # Preprocess the image
-        processed_image = preprocess_image(request.image)
+        processed_image_base64 = preprocess_image(request.image)
 
         # - Feature Extraction - #
-        # Block Lettering Analysis
+        # Instantiate all analyzers with the original base64 image data
         angularity_analyzer = AngularityAnalyzer(request.image, is_base64=True)
-        angularity_results = angularity_analyzer.analyze(debug=True)
-
         aspect_ratio_analyzer = AspectRatioAnalyzer(request.image, is_base64=True)
-        aspect_ratio_results = aspect_ratio_analyzer.analyze(debug=True)
-
         loop_detection_analyzer = LoopDetectionAnalyzer(request.image, is_base64=True)
-        loop_detection_results = loop_detection_analyzer.analyze(debug=True)
-
-        # Calligraphic Analysis
         coverage_analyzer = ContinuousPartCoverageAnalyzer(request.image, is_base64=True)
-        coverage_results = coverage_analyzer.analyze(debug=True)
-
         right_angle_analyzer = RightAngleAnalyzer(request.image, is_base64=True)
-        right_angle_results = right_angle_analyzer.analyze(debug=True)
-
         stroke_width_analyzer = StrokeWidthAnalyzer(request.image, is_base64=True)
-        stroke_width_results = stroke_width_analyzer.analyze(debug=True)
-
-        # Cursive Analysis
         curvature_analyzer = CursiveCurvatureAnalyzer(request.image, is_base64=True)
-        curvature_results = curvature_analyzer.analyze(debug=True)
-
         loop_analyzer = EnclosedLoopAnalyzer(request.image, is_base64=True)
-        loop_results = loop_analyzer.analyze(debug=True)
-
         connectivity_analyzer = StrokeConnectivityAnalyzer(request.image, is_base64=True)
-        connectivity_results = connectivity_analyzer.analyze(debug=True)
-
         consistency_analyzer = StrokeConsistencyAnalyzer(request.image, is_base64=True)
-        consistency_results = consistency_analyzer.analyze(debug=True)
-
-        # Italic Analysis
         spacing_analyzer = LetterSpacingAnalyzer(request.image, is_base64=True)
-        spacing_results = spacing_analyzer.analyze(debug=True)
-
         slant_angle_analyzer = SlantAngleAnalyzer(request.image, is_base64=True)
-        slant_angle_results = slant_angle_analyzer.analyze(debug=True)
-
         vertical_stroke_analyzer = VerticalStrokeAnalyzer(request.image, is_base64=True)
-        vertical_stroke_results = vertical_stroke_analyzer.analyze(debug=True)
-
-        # Print Analysis
         discrete_letter_analyzer = DiscreteLetterAnalyzer(request.image, is_base64=True)
-        discrete_letter_results = discrete_letter_analyzer.analyze(debug=True)
-
         letter_size_analyzer = LetterUniformityAnalyzer(request.image, is_base64=True)
-        letter_size_results = letter_size_analyzer.analyze(debug=True)
-
         vertical_alignment_analyzer = VerticalAlignmentAnalyzer(request.image, is_base64=True)
-        vertical_alignment_results = vertical_alignment_analyzer.analyze(debug=True)
-
-        # Shorthand Analysis
-        continuity_analyzer = StrokeContinuityAnalyzer(request.image, is_base64=True)
-        continuity_results = continuity_analyzer.analyze(debug=True)
-
+        shorthand_continuity_analyzer = StrokeContinuityAnalyzer(request.image, is_base64=True)  # Renamed variable
         smooth_curves_analyzer = StrokeSmoothnessAnalyzer(request.image, is_base64=True)
-        smooth_curves_results = smooth_curves_analyzer.analyze(debug=True)
-
         symbol_density_analyzer = SymbolDensityAnalyzer(request.image, is_base64=True)
+
+        # Run analysis (consider parallelizing if performance is critical)
+        angularity_results = angularity_analyzer.analyze(debug=True)
+        aspect_ratio_results = aspect_ratio_analyzer.analyze(debug=True)
+        loop_detection_results = loop_detection_analyzer.analyze(debug=True)
+        coverage_results = coverage_analyzer.analyze(debug=True)
+        right_angle_results = right_angle_analyzer.analyze(debug=True)
+        stroke_width_results = stroke_width_analyzer.analyze(debug=True)
+        curvature_results = curvature_analyzer.analyze(debug=True)
+        loop_results = loop_analyzer.analyze(debug=True)
+        connectivity_results = connectivity_analyzer.analyze(debug=True)
+        consistency_results = consistency_analyzer.analyze(debug=True)
+        spacing_results = spacing_analyzer.analyze(debug=True)
+        slant_angle_results = slant_angle_analyzer.analyze(debug=True)
+        vertical_stroke_results = vertical_stroke_analyzer.analyze(debug=True)
+        discrete_letter_results = discrete_letter_analyzer.analyze(debug=True)
+        letter_size_results = letter_size_analyzer.analyze(debug=True)
+        vertical_alignment_results = vertical_alignment_analyzer.analyze(debug=True)
+        shorthand_continuity_results = shorthand_continuity_analyzer.analyze(debug=True)  # Renamed variable
+        smooth_curves_results = smooth_curves_analyzer.analyze(debug=True)
         symbol_density_results = symbol_density_analyzer.analyze(debug=True)
+
 
         # =====================================================
         # === SCORE CALCULATION FOR BLOCK LETTERING STYLE ===
         # =====================================================
-        # Retrieve metrics from the analyzers
-        angularity_metrics = angularity_results.get('metrics', {})
-        aspect_ratio_metrics = aspect_ratio_results.get('metrics', {})
-        loop_detection_metrics = loop_detection_results.get('metrics', {})
+        # Retrieve metrics
+        block_angularity_metrics = angularity_results.get('metrics', {})
+        block_aspect_ratio_metrics = aspect_ratio_results.get('metrics', {})
+        block_loop_metrics = loop_detection_results.get('metrics', {})
 
-        # Angularity
-        median_angle = angularity_metrics.get('median_turning_angle')
-        shape_count = angularity_metrics.get('shape_count', 0)
-
-        angularity_score = 0.0  # Default score
-        if shape_count > 0 and median_angle is not None and median_angle > 0:
-            if 80.0 <= median_angle <= 100.0:
-                angularity_score = 1.0
-            elif median_angle >= 135.0 or median_angle <= 45.0:
-                angularity_score = 0.0
+        # --- Angularity Score ---
+        block_median_angle = block_angularity_metrics.get('median_turning_angle')
+        block_shape_count = block_angularity_metrics.get('shape_count', 0)
+        block_angularity_feature_score = 0.0  # Default score
+        if block_shape_count > 0 and block_median_angle is not None and block_median_angle > 0:
+            if 80.0 <= block_median_angle <= 100.0:  # Ideal range for blocky letters
+                block_angularity_feature_score = 1.0
+            elif block_median_angle >= 135.0 or block_median_angle <= 45.0:  # Very curved or very sharp (less blocky)
+                block_angularity_feature_score = 0.0
             else:
-                # Linear interpolation between the thresholds: score decreases as angle increases
-                angularity_score = (135.0 - median_angle) / 90.0
-                angularity_score = max(0.0, min(1.0, angularity_score))
+                # Linear interpolation: score decreases as angle moves away from 90 degrees towards 135 or 45
+                # Simplified: Score decreases linearly as angle moves towards 135 (away from 90)
+                # and also decreases linearly as angle moves towards 45 (away from 90)
+                # Let's use a simpler approach: higher score for angles closer to 90.
+                # Max deviation is 45 degrees (90 +/- 45). Score = 1 - (abs(angle - 90) / 45)
+                deviation_from_90 = abs(block_median_angle - 90.0)
+                block_angularity_feature_score = max(0.0, 1.0 - (deviation_from_90 / 45.0))
 
-        # Aspect ratio score
-        std_dev_ar = aspect_ratio_metrics.get('std_dev_aspect_ratio')
-        num_candidates = aspect_ratio_metrics.get('num_letter_candidates', 0)
-        aspect_ratio_consistency_score = 0.0
-
-        if num_candidates >= 2 and std_dev_ar is not None:
-            if std_dev_ar <= 0.15:
-                aspect_ratio_consistency_score = 1.0
-            elif std_dev_ar >= 1.0:
-                aspect_ratio_consistency_score = 0.0
+        # --- Aspect Ratio Consistency Score ---
+        block_aspect_ratio_std_dev = block_aspect_ratio_metrics.get('std_dev_aspect_ratio')
+        block_num_letter_candidates = block_aspect_ratio_metrics.get('num_letter_candidates', 0)
+        block_aspect_ratio_consistency_score = 0.0  # Default
+        # Thresholds for standard deviation (lower is more consistent/block-like)
+        BLOCK_AR_STD_DEV_MAX_SCORE_THRESHOLD = 0.15  # Below this -> score 1.0
+        BLOCK_AR_STD_DEV_MIN_SCORE_THRESHOLD = 1.0  # Above this -> score 0.0
+        if block_num_letter_candidates >= 2 and block_aspect_ratio_std_dev is not None:
+            if block_aspect_ratio_std_dev <= BLOCK_AR_STD_DEV_MAX_SCORE_THRESHOLD:
+                block_aspect_ratio_consistency_score = 1.0
+            elif block_aspect_ratio_std_dev >= BLOCK_AR_STD_DEV_MIN_SCORE_THRESHOLD:
+                block_aspect_ratio_consistency_score = 0.0
             else:
-                # Linear interpolation: score decreases as std dev increases
-                aspect_ratio_consistency_score = (1.0 - std_dev_ar) / (
-                            1.0 - 0.15)
-                aspect_ratio_consistency_score = max(0.0, min(1.0, aspect_ratio_consistency_score))
+                # Linear interpolation between thresholds
+                block_aspect_ratio_consistency_score = (
+                                                               BLOCK_AR_STD_DEV_MIN_SCORE_THRESHOLD - block_aspect_ratio_std_dev) / \
+                                                       (
+                                                               BLOCK_AR_STD_DEV_MIN_SCORE_THRESHOLD - BLOCK_AR_STD_DEV_MAX_SCORE_THRESHOLD)
+                block_aspect_ratio_consistency_score = max(0.0, min(1.0, block_aspect_ratio_consistency_score))
 
-        # Loop percentage score
-        percentage_loops = loop_detection_metrics.get('percentage_shapes_with_loops', 0.0)
-        # Convert percentage to a score between 0 and 1
-        loop_score = 1 - (percentage_loops / 100.0)
-        loop_score = max(0.0, max(0.0, loop_score))
+        # --- Loop Presence Score (Inverse) ---
+        # Block letters tend to have fewer complex loops compared to cursive.
+        block_percentage_loops = block_loop_metrics.get('percentage_shapes_with_loops', 0.0)
+        # Score is higher when the percentage of loops is lower.
+        block_loop_feature_score = 1.0 - (block_percentage_loops / 100.0)
+        block_loop_feature_score = max(0.0, min(1.0, block_loop_feature_score))  # Clamp score [0, 1]
 
-        # Combined block lettering score (equal weights)
-        block_lettering_score = (angularity_score + aspect_ratio_consistency_score + loop_score) / 3
+        # --- Combined Block Lettering Style Score ---
+        # Weights can be adjusted based on feature importance
+        W_BLOCK_ANGULARITY = 1.0
+        W_BLOCK_ASPECT_RATIO = 1.0
+        W_BLOCK_LOOP = 1.0
+        total_block_weight = W_BLOCK_ANGULARITY + W_BLOCK_ASPECT_RATIO + W_BLOCK_LOOP
+
+        block_lettering_style_score = (W_BLOCK_ANGULARITY * block_angularity_feature_score +
+                                       W_BLOCK_ASPECT_RATIO * block_aspect_ratio_consistency_score +
+                                       W_BLOCK_LOOP * block_loop_feature_score) / total_block_weight
+
 
         # =====================================================
         # === SCORE CALCULATION FOR CALLIGRAPHIC HANDWRITING STYLE ===
         # =====================================================
-        # Retrieve metrics from the analyzers
-        coverage_metrics = coverage_results.get('metrics', {})
-        right_angle_metrics = right_angle_results.get('metrics', {})
-        stroke_width_metrics = stroke_width_results.get('metrics', {})
+        # Retrieve metrics
+        calligraphic_coverage_metrics = coverage_results.get('metrics', {})
+        calligraphic_right_angle_metrics = right_angle_results.get('metrics', {})
+        calligraphic_stroke_width_metrics = stroke_width_results.get('metrics', {})
 
-        # Continuous part coverage score
-        coverage_ratio = coverage_metrics.get('continuous_part_coverage_ratio', 0.0)
-        coverage_score = max(0.0, min(1.0, coverage_ratio))
+        # --- Continuous Part Coverage Score ---
+        # Calligraphy often has continuous strokes, but may have breaks for flourishes.
+        calligraphic_coverage_ratio = calligraphic_coverage_metrics.get('continuous_part_coverage_ratio', 0.0)
+        # Direct mapping: higher coverage ratio might suggest more connected writing.
+        # For calligraphy, this might be nuanced. Let's assume higher is generally better for now.
+        calligraphic_coverage_feature_score = max(0.0, min(1.0, calligraphic_coverage_ratio))
 
-        # Right angle density score
-        density = right_angle_metrics.get('right_angle_corner_density', 0.0)
-        right_angle_score = 0.0
+        # --- Right Angle Density Score (Inverse) ---
+        # Calligraphy tends towards curves rather than sharp right angles.
+        calligraphic_right_angle_density = calligraphic_right_angle_metrics.get('right_angle_corner_density', 0.0)
+        calligraphic_right_angle_feature_score = 0.0  # Default
+        # Threshold: Densities >= this value will get score 0 (less calligraphic)
+        CALLIGRAPHIC_RIGHT_ANGLE_DENSITY_THRESHOLD_FOR_MIN_SCORE = 10.0  # Tunable
 
-        MAX_SCORE_DENSITY = 10.0 # Threshold: Densities >= this value will get score 0
-
-        if MAX_SCORE_DENSITY > 0:
-            # Simple linear scaling down from 1 (at density 0) to 0 (at density MAX_SCORE_DENSITY)
-            right_angle_score = 1.0 - (density / MAX_SCORE_DENSITY)
-            right_angle_score = max(0.0, min(1.0, right_angle_score))  # Clamp score to [0, 1]
+        if CALLIGRAPHIC_RIGHT_ANGLE_DENSITY_THRESHOLD_FOR_MIN_SCORE > 0:
+            # Score decreases linearly as density increases
+            calligraphic_right_angle_feature_score = 1.0 - (
+                    calligraphic_right_angle_density / CALLIGRAPHIC_RIGHT_ANGLE_DENSITY_THRESHOLD_FOR_MIN_SCORE)
+            calligraphic_right_angle_feature_score = max(0.0, min(1.0,
+                                                                  calligraphic_right_angle_feature_score))  # Clamp score [0, 1]
         else:
-            right_angle_score = 1.0 if density == 0 else 0.0
+            calligraphic_right_angle_feature_score = 1.0 if calligraphic_right_angle_density == 0 else 0.0
 
-        # Stroke width variation score
-        variation_coefficient = stroke_width_metrics.get('variation_coefficient', 0.0)
-        width_score = 0.0  # Initialize the score
+        # --- Stroke Width Variation Score ---
+        # Calligraphy is characterized by significant stroke width variation.
+        calligraphic_width_variation_coefficient = calligraphic_stroke_width_metrics.get('variation_coefficient', 0.0)
+        calligraphic_width_variation_score = 0.0  # Default
+        # Threshold for Coefficient of Variation (CV) where the score reaches 1.0 (highly calligraphic). Tunable.
+        CALLIGRAPHIC_WIDTH_CV_THRESHOLD_FOR_MAX_SCORE = 0.6  # Higher CV means more variation
 
-        # Define a threshold for CV where the score reaches 1.0 (TUNABLE PARAMETER)
-        # A CV of 0.5 might indicate significant variation. Adjust based on testing.
-        MAX_SCORE_CV_THRESHOLD = 0.6
-
-        if MAX_SCORE_CV_THRESHOLD > 0:
+        if CALLIGRAPHIC_WIDTH_CV_THRESHOLD_FOR_MAX_SCORE > 0:
             # Linearly scale the score: 0 at CV=0, 1 at CV=THRESHOLD
-            width_score = variation_coefficient / MAX_SCORE_CV_THRESHOLD
-            # Clamp the score to be between 0.0 and 1.0
-            width_score = max(0.0, min(1.0, width_score))
+            calligraphic_width_variation_score = calligraphic_width_variation_coefficient / CALLIGRAPHIC_WIDTH_CV_THRESHOLD_FOR_MAX_SCORE
+            calligraphic_width_variation_score = max(0.0,
+                                                     min(1.0, calligraphic_width_variation_score))  # Clamp score [0, 1]
         else:
             # Handle edge case of zero threshold
-            width_score = 1.0 if variation_coefficient > 0 else 0.0
+            calligraphic_width_variation_score = 1.0 if calligraphic_width_variation_coefficient > 0 else 0.0
 
-        # Combined calligraphic score (equal weights)
-        calligraphic_score = (coverage_score + right_angle_score + width_score) / 3
+        # --- Combined Calligraphic Style Score ---
+        # Weights can be adjusted
+        W_CALLIGRAPHIC_COVERAGE = 0.8  # Slightly less weight?
+        W_CALLIGRAPHIC_RIGHT_ANGLE = 1.0
+        W_CALLIGRAPHIC_WIDTH_VAR = 1.2  # More weight?
+        total_calligraphic_weight = W_CALLIGRAPHIC_COVERAGE + W_CALLIGRAPHIC_RIGHT_ANGLE + W_CALLIGRAPHIC_WIDTH_VAR
+
+        calligraphic_style_score = (W_CALLIGRAPHIC_COVERAGE * calligraphic_coverage_feature_score +
+                                    W_CALLIGRAPHIC_RIGHT_ANGLE * calligraphic_right_angle_feature_score +
+                                    W_CALLIGRAPHIC_WIDTH_VAR * calligraphic_width_variation_score) / total_calligraphic_weight
+
 
         # =====================================================
         # === SCORE CALCULATION FOR CURSIVE HANDWRITING STYLE ===
         # =====================================================
-        # Retrieve metrics from the analyzers
-        curvature_metrics = curvature_results.get('metrics', {})
-        loop_metrics = loop_results.get('metrics', {})
-        connectivity_metrics = connectivity_results.get('metrics', {})
-        consistency_metrics = consistency_results.get('metrics', {})
+        # Retrieve metrics
+        cursive_curvature_metrics = curvature_results.get('metrics', {})
+        cursive_loop_metrics = loop_results.get('metrics', {})
+        cursive_connectivity_metrics = connectivity_results.get('metrics', {})
+        cursive_consistency_metrics = consistency_results.get('metrics', {})
 
-        # Curvature Score Calculation
-        # Use average normalized segment length from CursiveCurvatureAnalyzer.
-        # Hypothesis: Smoother cursive curves are approximated by longer segments.
-        # We normalize this length against a threshold to get a score from 0 to 1.
-        avg_norm_seg_len = curvature_metrics.get('avg_normalized_segment_length', 0.0)
+        # --- Curvature/Smoothness Score ---
+        # Use average normalized segment length: Smoother cursive -> longer segments.
+        cursive_avg_norm_segment_length = cursive_curvature_metrics.get('avg_normalized_segment_length', 0.0)
+        # Threshold for avg segment length (fraction of image height) for max score. Tunable.
+        CURSIVE_SEGMENT_LENGTH_THRESHOLD_FOR_MAX_SCORE = 0.05
+        cursive_curvature_feature_score = 0.0  # Default
 
-        # Define a threshold for average segment length (as fraction of image height)
-        # that corresponds to a maximum score (e.g., 1.0). This is a tunable parameter.
-        # Lengths above this will also get a score of 1.0.
-        # Example: If avg segment length is 5% of image height, score is 1.0.
-        AVG_LENGTH_THRESHOLD_FOR_MAX_SCORE = 0.05  # Tunable: adjust based on testing
-
-        if AVG_LENGTH_THRESHOLD_FOR_MAX_SCORE > 0:
-            # Linearly scale the score from 0 up to the threshold.
-            curvature_score = min(1.0, max(0.0, avg_norm_seg_len / AVG_LENGTH_THRESHOLD_FOR_MAX_SCORE))
+        if CURSIVE_SEGMENT_LENGTH_THRESHOLD_FOR_MAX_SCORE > 0:
+            # Linearly scale score from 0 up to the threshold.
+            cursive_curvature_feature_score = min(1.0, max(0.0,
+                                                           cursive_avg_norm_segment_length / CURSIVE_SEGMENT_LENGTH_THRESHOLD_FOR_MAX_SCORE))
         else:
-            # Avoid division by zero; if threshold is 0, score is 1 only if length is > 0.
-            curvature_score = 1.0 if avg_norm_seg_len > 0 else 0.0
+            cursive_curvature_feature_score = 1.0 if cursive_avg_norm_segment_length > 0 else 0.0
 
+        # --- Stroke Connectivity Score ---
         # Lower 'average_components_per_word' means MORE connected (more cursive).
-        # We need to map this to a score where 1 is highly connected and 0 is disconnected.
+        cursive_avg_components_per_word = cursive_connectivity_metrics.get('average_components_per_word', None)
+        cursive_word_count = cursive_connectivity_metrics.get('word_count', 0)
+        cursive_connectivity_feature_score = 0.0  # Default
+        # Thresholds:
+        CURSIVE_CONNECTIVITY_MIN_COMPONENTS_FOR_MAX_SCORE = 1.5  # Below this, score is 1 (highly connected)
+        CURSIVE_CONNECTIVITY_MAX_COMPONENTS_FOR_MIN_SCORE = 8.0  # At or above this, score is 0 (very print-like)
 
-        # Define thresholds based on typical observations or the classify_connectivity function:
-        # - A word being a single component (avg_comps=1) is highly cursive. Score = 1.
-        # - Words averaging many components (e.g., >= 8) are very print-like. Score = 0.
-        MIN_COMPONENTS_FOR_MAX_SCORE = 1.0  # Below this, score is 1
-        MAX_COMPONENTS_FOR_MIN_SCORE = 8.0  # At or above this, score is 0
-
-        avg_comps_per_word = connectivity_metrics.get('average_components_per_word', None)
-        word_count = connectivity_metrics.get('word_count', 0)
-
-        connectivity_score = 0.0  # Default score if no words or components detected
-
-        if word_count > 0 and avg_comps_per_word is not None:
-            if avg_comps_per_word <= MIN_COMPONENTS_FOR_MAX_SCORE:
-                connectivity_score = 1.0
-            elif avg_comps_per_word >= MAX_COMPONENTS_FOR_MIN_SCORE:
-                connectivity_score = 0.0
+        if cursive_word_count > 0 and cursive_avg_components_per_word is not None:
+            if cursive_avg_components_per_word <= CURSIVE_CONNECTIVITY_MIN_COMPONENTS_FOR_MAX_SCORE:
+                cursive_connectivity_feature_score = 1.0
+            elif cursive_avg_components_per_word >= CURSIVE_CONNECTIVITY_MAX_COMPONENTS_FOR_MIN_SCORE:
+                cursive_connectivity_feature_score = 0.0
             else:
-                # Linear interpolation between the thresholds
-                # Score decreases as avg_comps_per_word increases
-                connectivity_score = (MAX_COMPONENTS_FOR_MIN_SCORE - avg_comps_per_word) / (MAX_COMPONENTS_FOR_MIN_SCORE - MIN_COMPONENTS_FOR_MAX_SCORE)
-                # Ensure score is clamped just in case (shouldn't be needed with checks above)
-                connectivity_score = min(1.0, max(0.0, connectivity_score))
+                # Linear interpolation: score decreases as avg_comps_per_word increases
+                cursive_connectivity_feature_score = (
+                                                             CURSIVE_CONNECTIVITY_MAX_COMPONENTS_FOR_MIN_SCORE - cursive_avg_components_per_word) / \
+                                                     (
+                                                             CURSIVE_CONNECTIVITY_MAX_COMPONENTS_FOR_MIN_SCORE - CURSIVE_CONNECTIVITY_MIN_COMPONENTS_FOR_MAX_SCORE)
+                cursive_connectivity_feature_score = min(1.0, max(0.0, cursive_connectivity_feature_score))  # Clamp
 
-        # Enclosed loop ratio: higher ratio indicates more cursive features
-        loop_ratio = loop_metrics.get('enclosed_loop_ratio', 0)
-        loop_score = min(1, max(0, loop_ratio))
+        # --- Enclosed Loop Ratio Score ---
+        # Higher ratio indicates more cursive features (like 'e', 'l', 'o').
+        cursive_enclosed_loop_ratio = cursive_loop_metrics.get('enclosed_loop_ratio', 0.0)
+        # Direct mapping, potentially scaled if needed, but 0-1 ratio works well.
+        cursive_loop_feature_score = min(1.0, max(0.0, cursive_enclosed_loop_ratio))
 
-        # Consistency Score
-        consistency_score = consistency_metrics.get('stroke_consistency_index', 0)
+        # --- Stroke Consistency Score ---
+        # More consistent strokes might indicate a more practiced cursive hand.
+        cursive_stroke_consistency_index = cursive_consistency_metrics.get('stroke_consistency_index', 0.0)
+        # Assuming the index is already normalized between 0 and 1 (1 = most consistent).
+        cursive_consistency_feature_score = min(1.0, max(0.0, cursive_stroke_consistency_index))
 
-        # Combined cursive score (equal weights)
-        cursive_score = (connectivity_score + loop_score + curvature_score + consistency_score) / 4
+        # --- Combined Cursive Style Score ---
+        W_CURSIVE_CURVATURE = 1.0
+        W_CURSIVE_CONNECTIVITY = 1.2  # Connectivity is key for cursive
+        W_CURSIVE_LOOP = 0.9
+        W_CURSIVE_CONSISTENCY = 0.9
+        total_cursive_weight = W_CURSIVE_CURVATURE + W_CURSIVE_CONNECTIVITY + W_CURSIVE_LOOP + W_CURSIVE_CONSISTENCY
+
+        cursive_style_score = (W_CURSIVE_CURVATURE * cursive_curvature_feature_score +
+                               W_CURSIVE_CONNECTIVITY * cursive_connectivity_feature_score +
+                               W_CURSIVE_LOOP * cursive_loop_feature_score +
+                               W_CURSIVE_CONSISTENCY * cursive_consistency_feature_score) / total_cursive_weight
+
 
         # =====================================================
         # === SCORE CALCULATION FOR ITALIC HANDWRITING STYLE ===
         # =====================================================
-        # Retrieve metrics from the analyzers
-        spacing_metrics = spacing_results.get('metrics', {})
-        slant_metrics = slant_angle_results.get('metrics', {})
-        vertical_stroke_metrics = vertical_stroke_results.get('metrics', {})
+        # Retrieve metrics
+        italic_spacing_metrics = spacing_results.get('metrics', {})
+        italic_slant_metrics = slant_angle_results.get('metrics', {})
+        italic_vertical_stroke_metrics = vertical_stroke_results.get('metrics', {})
 
-        # Letter spacing: uniform spacing contributes to italic appearance
-        spacing_is_uniform = spacing_metrics.get('is_uniform')
-        if spacing_is_uniform is None:
-            # Not enough gaps to determine uniformity; assign a neutral score.
-            spacing_score = 0.5
+        # --- Letter Spacing Uniformity Score ---
+        # Uniform spacing can contribute to a neat italic appearance.
+        italic_spacing_is_uniform = italic_spacing_metrics.get('is_uniform')
+        if italic_spacing_is_uniform is None:
+            # Not enough gaps to determine; assign a neutral score or low confidence?
+            italic_spacing_feature_score = 0.5  # Neutral score
         else:
-            spacing_score = 1.0 if spacing_is_uniform else 0.0
+            # Assume uniform spacing is slightly more characteristic of careful italic
+            italic_spacing_feature_score = 1.0 if italic_spacing_is_uniform else 0.2  # Penalize non-uniform
 
-        # Slant angle: higher angle (within range) indicates italic writing
-        vertical_slant = abs(slant_metrics.get('vertical_slant', 0))
-        italic_threshold = slant_metrics.get('italic_threshold', 8)
-        slant_std = slant_metrics.get('slant_std', 0)
+        # --- Slant Angle Score ---
+        # Significant, consistent slant is the defining feature of italic.
+        italic_absolute_vertical_slant = abs(italic_slant_metrics.get('vertical_slant', 0))
+        italic_slant_threshold_config = italic_slant_metrics.get('italic_threshold',
+                                                                 8)  # Configured threshold from analyzer
+        italic_slant_std_dev = italic_slant_metrics.get('slant_std', 0)
 
-        slant_score = min(1.0, vertical_slant / (italic_threshold + 5))
-        if slant_std > 10:
-            slant_score *= 0.85  # penalize unstable slants
+        # Score based on angle magnitude relative to threshold
+        ITALIC_SLANT_ANGLE_FOR_MAX_SCORE = italic_slant_threshold_config + 10  # e.g., 18 degrees for max score if threshold is 8
+        italic_slant_magnitude_score = 0.0
+        if ITALIC_SLANT_ANGLE_FOR_MAX_SCORE > 0:
+            italic_slant_magnitude_score = min(1.0, max(0.0,
+                                                        italic_absolute_vertical_slant / ITALIC_SLANT_ANGLE_FOR_MAX_SCORE))
+
+        # Penalize inconsistency (high standard deviation)
+        ITALIC_SLANT_STD_DEV_PENALTY_THRESHOLD = 10.0  # Above this std dev, start penalizing
+        slant_consistency_penalty = 0.0
+        if italic_slant_std_dev > ITALIC_SLANT_STD_DEV_PENALTY_THRESHOLD:
+            # Example penalty: Reduce score by up to 25% for very high std dev
+            slant_consistency_penalty = min(0.25, (
+                    italic_slant_std_dev - ITALIC_SLANT_STD_DEV_PENALTY_THRESHOLD) / 20.0)  # Tunable
+
+        italic_slant_feature_score = italic_slant_magnitude_score * (1.0 - slant_consistency_penalty)
+
 
         # --- Vertical Stroke Proportion Score ---
-        # Using metrics from the new VerticalStrokeAnalyzer: median_height, max_height, ascender_ratio
-        # A higher ascender_ratio (max_height / median_height) indicates more pronounced difference
-        # between x-height and ascender/capital height, common in italic, cursive, calligraphic styles.
-        # We assume that for italic, a significant ratio (e.g., > 1.5) is more characteristic than a ratio near 1 (like print/block).
-        # Let's normalize the score based on the ascender_ratio.
-        ascender_ratio = vertical_stroke_metrics.get('ascender_ratio',
-                                                     1.0)  # Default to 1 (uniform) if not found or median_height is 0
+        # Italic often shows distinct x-height and ascender/descender heights.
+        italic_ascender_ratio = italic_vertical_stroke_metrics.get('ascender_ratio', 1.0)  # Default to 1 (uniform)
+        italic_vertical_proportion_score = 0.0  # Default
+        # Thresholds for scoring based on ratio (higher ratio -> more distinct zones)
+        ITALIC_VERTICAL_PROPORTION_BASELINE_RATIO = 1.3  # Ratios below this get low scores
+        ITALIC_VERTICAL_PROPORTION_TARGET_RATIO_FOR_MAX_SCORE = 2.5  # Ratios at or above get max score
 
-        # Define thresholds for scoring:
-        baseline_ratio = 1.2  # Ratios below this (close to uniform height) get low scores.
-        target_ratio_for_max_score = 3.0  # Ratios at or above this get a score of 1. Ratios between baseline and target are scaled linearly.
-
-        if ascender_ratio <= baseline_ratio:
-            vertical_score = 0.0  # Ratio indicates uniform height, less likely italic
-        elif ascender_ratio >= target_ratio_for_max_score:
-            vertical_score = 1.0  # Ratio is high, consistent with distinct vertical zones
+        if italic_ascender_ratio <= ITALIC_VERTICAL_PROPORTION_BASELINE_RATIO:
+            italic_vertical_proportion_score = 0.0
+        elif italic_ascender_ratio >= ITALIC_VERTICAL_PROPORTION_TARGET_RATIO_FOR_MAX_SCORE:
+            italic_vertical_proportion_score = 1.0
         else:
             # Linear scaling between baseline and target
-            vertical_score = (ascender_ratio - baseline_ratio) / (target_ratio_for_max_score - baseline_ratio)
+            italic_vertical_proportion_score = (italic_ascender_ratio - ITALIC_VERTICAL_PROPORTION_BASELINE_RATIO) / \
+                                               (
+                                                       ITALIC_VERTICAL_PROPORTION_TARGET_RATIO_FOR_MAX_SCORE - ITALIC_VERTICAL_PROPORTION_BASELINE_RATIO)
+            italic_vertical_proportion_score = min(1.0, max(0.0, italic_vertical_proportion_score))  # Clamp
 
-        # Ensure score is clamped between 0 and 1 (though logic above should handle it)
-        vertical_score = min(1.0, max(0.0, vertical_score))
+        # --- Combined Italic Style Score ---
+        W_ITALIC_SPACING = 0.8
+        W_ITALIC_SLANT = 1.5  # Slant is most important
+        W_ITALIC_VERTICAL = 1.0
+        total_italic_weight = W_ITALIC_SPACING + W_ITALIC_SLANT + W_ITALIC_VERTICAL
 
-        # Combined italic score (equal weights)
-        italic_score = (vertical_score + slant_score + spacing_score) / 3
+        italic_style_score = (W_ITALIC_SPACING * italic_spacing_feature_score +
+                              W_ITALIC_SLANT * italic_slant_feature_score +
+                              W_ITALIC_VERTICAL * italic_vertical_proportion_score) / total_italic_weight
+
 
         # =====================================================
         # === SCORE CALCULATION FOR PRINT HANDWRITING STYLE ===
         # =====================================================
-        # Retrieve metrics from the analyzers
-        vertical_alignment_metrics = vertical_alignment_results.get('metrics', {})
-        letter_size_metrics = letter_size_results.get('metrics', {})
-        discrete_letter_metrics = discrete_letter_results.get('metrics', {})
+        # Retrieve metrics
+        print_vertical_alignment_metrics = vertical_alignment_results.get('metrics', {})
+        print_letter_size_metrics = letter_size_results.get('metrics', {})
+        print_discrete_letter_metrics = discrete_letter_results.get('metrics', {})
 
-        # Vertical alignment: higher alignment indicates print writing
-        overall_align_score = vertical_alignment_metrics.get('overall_alignment_score', 0.0)
-        height_consistency = vertical_alignment_metrics.get('height_consistency', 1.0)  # Default to max inconsistency
-        consistency_score = max(0.0, 1.0 - height_consistency)  # Higher score = better consistency
+        # --- Vertical Alignment Score ---
+        # Print is typically well-aligned vertically. Requires multiple components for meaningful assessment.
+        print_component_count_for_align = print_vertical_alignment_metrics.get('component_count', 0)
+        print_vertical_alignment_feature_score = 0.0  # Default score if not enough components
 
-        # Combine alignment and consistency (e.g., average them)
-        combined_alignment_score = (overall_align_score + consistency_score) / 2.0
+        if print_component_count_for_align > 1:
+            # Retrieve the individual scores from the analyzer metrics
+            print_overall_vertical_alignment_score = print_vertical_alignment_metrics.get('overall_alignment_score',
+                                                                                          0.0)
 
-        # Letter size uniformity: higher uniformity indicates print
-        height_uniformity = letter_size_metrics.get('height_uniformity', 0)
-        width_uniformity = letter_size_metrics.get('width_uniformity', 0)
-        aspect_ratio_uniformity = letter_size_metrics.get('aspect_ratio_uniformity', 0)
-        size_uniformity = (height_uniformity + width_uniformity + aspect_ratio_uniformity) / 3
-        size_score = min(1, max(0, size_uniformity))
+            # Height consistency metric = weighted normalized standard deviation of heights.
+            # Higher value means *less* consistency. So, score = 1 - metric_value.
+            # Default to 1.0 (max inconsistency) if key is missing.
+            print_raw_height_consistency = print_vertical_alignment_metrics.get('height_consistency', 1.0)
+            # Calculate the consistency *score* (higher is better)
+            print_height_consistency_score = 1.0 - print_raw_height_consistency
 
-        # Discrete letters: higher discreteness indicates print over cursive
-        num_components = discrete_letter_metrics.get('num_components', 0)
-        total_components = discrete_letter_metrics.get('total_components', 0)
-        discrete_index = num_components / total_components if total_components > 0 else 0
-        discrete_score = min(1, max(0, discrete_index))
+            # Combine alignment score (higher=better) and height consistency score (higher=better)
+            # Both scores are now expected to be in the range [0, 1]
+            calculated_score = (print_overall_vertical_alignment_score + print_height_consistency_score) / 2.0
 
-        # Combined print score (equal weights)
-        print_score = (combined_alignment_score + size_score + discrete_score) / 3
+            # Ensure the combined score is clamped between 0 and 1
+            print_vertical_alignment_feature_score = max(0.0, min(1.0, calculated_score))
+        else:
+            # Assign a low score if there are not enough components (<= 1)
+            # because vertical alignment/consistency cannot be reliably measured.
+            print_vertical_alignment_feature_score = 0.0
+
+        # --- Letter Size Uniformity Score ---
+        # Print often has uniform letter sizes and shapes.
+        # Requires at least 2 components (letters) to measure uniformity meaningfully.
+
+        # Get the count of valid components detected by the DiscreteLetterAnalyzer,
+        # as these are likely the inputs for the uniformity analyzer.
+        num_print_components = print_discrete_letter_metrics.get('num_components', 0)
+
+        print_size_uniformity_feature_score = 0.0  # Default score: Uniformity cannot be assessed
+
+        if num_print_components > 1:
+            # Only calculate uniformity if there are multiple components to compare
+            print_height_uniformity = print_letter_size_metrics.get('height_uniformity', 0.0)
+            print_width_uniformity = print_letter_size_metrics.get('width_uniformity', 0.0)
+            print_aspect_ratio_uniformity = print_letter_size_metrics.get('aspect_ratio_uniformity', 0.0)
+            print_stroke_width_uniformity = print_letter_size_metrics.get('stroke_width_uniformity', 0.0)
+
+            # Average the uniformity scores. Assume they are all [0, 1] where 1 is max uniformity.
+            print_size_uniformity_feature_score = (print_height_uniformity +
+                                                   print_width_uniformity +
+                                                   print_aspect_ratio_uniformity +
+                                                   print_stroke_width_uniformity) / 4.0
+            # Clamp the result just in case
+            print_size_uniformity_feature_score = max(0.0, min(1.0, print_size_uniformity_feature_score))
+
+        # --- Discrete Letter Score ---
+        # Print consists of discrete, separate letters (high number of components relative to strokes/area).
+        # Using the discrete letter index (ratio of components to total potential components/area/strokes).
+        print_num_components = print_discrete_letter_metrics.get('num_components', 0)
+        print_total_components_ref = print_discrete_letter_metrics.get('total_components',
+                                                                       0)  # Check what this represents
+        # Assuming a higher index/ratio means more discrete letters.
+        print_discrete_letter_index = print_num_components / print_total_components_ref if print_total_components_ref > 1 else 0
+        print_discrete_letter_feature_score = min(1.0, max(0.0, print_discrete_letter_index))  # Clamp
+
+        # --- Combined Print Style Score ---
+        W_PRINT_ALIGNMENT = 1.1
+        W_PRINT_SIZE_UNIFORMITY = 1.0
+        W_PRINT_DISCRETE = 1.2  # Discreteness is key for print vs cursive
+        total_print_weight = W_PRINT_ALIGNMENT + W_PRINT_SIZE_UNIFORMITY + W_PRINT_DISCRETE
+
+        print_style_score = (W_PRINT_ALIGNMENT * print_vertical_alignment_feature_score +
+                             W_PRINT_SIZE_UNIFORMITY * print_size_uniformity_feature_score +
+                             W_PRINT_DISCRETE * print_discrete_letter_feature_score) / total_print_weight
+
 
         # =====================================================
         # === SCORE CALCULATION FOR SHORTHAND HANDWRITING STYLE ===
         # =====================================================
-        # Retrieve metrics from the analyzers
-        smooth_curves_metrics = smooth_curves_results.get('metrics', {})
-        continuity_metrics = continuity_results.get('metrics', {})
-        symbol_density_metrics = symbol_density_results.get('metrics', {})
+        # Retrieve metrics
+        shorthand_smooth_curves_metrics = smooth_curves_results.get('metrics', {})
+        # Use the correctly named results variable from extraction phase
+        shorthand_stroke_continuity_metrics = shorthand_continuity_results.get('metrics', {})
+        shorthand_symbol_density_metrics = symbol_density_results.get('metrics', {})
 
-        # Smooth curves: higher smoothness indicates shorthand writing
-        avg_angle_change = smooth_curves_metrics.get('avg_abs_angle_change', 1.0)  # Default assumes very unsmooth
+        # --- Smooth Curves Score ---
+        # Shorthand often involves smooth, flowing curves. Low average angle change indicates smoothness.
+        shorthand_avg_abs_angle_change = shorthand_smooth_curves_metrics.get('avg_abs_angle_change',
+                                                                             1.0)  # Default assumes unsmooth
+        # Threshold for max average angle change (radians) considered "smooth enough". Tunable.
+        SHORTHAND_CURVE_SMOOTHNESS_ANGLE_CHANGE_THRESHOLD_RAD = 0.4  # Lower value = stricter smoothness requirement
 
-        # Define a threshold for max average angle change (in radians) considered "smooth enough".
-        # e.g., 0.5 radians is about 28.6 degrees average change between spline segments.
-        # A lower threshold makes the smoothness requirement stricter. Needs tuning.
-        SMOOTHNESS_THRESHOLD_RAD = 0.3
+        # Score = 1 - (value / threshold), max score for 0 change, min score at/above threshold.
+        shorthand_curve_smoothness_feature_score = max(0.0, 1.0 - (
+                shorthand_avg_abs_angle_change / SHORTHAND_CURVE_SMOOTHNESS_ANGLE_CHANGE_THRESHOLD_RAD))
 
-        # Calculate score: linearly decrease from 1 (at 0 change) to 0 (at threshold).
-        # score = 1 - (value / threshold)
-        curve_score = max(0.0, 1.0 - (avg_angle_change / SMOOTHNESS_THRESHOLD_RAD))
+        # --- Stroke Continuity Score ---
+        # Shorthand symbols can be continuous loops or lines, potentially fewer endpoints per component.
+        shorthand_num_endpoints = shorthand_stroke_continuity_metrics.get('num_endpoints', 0)
+        shorthand_num_components = shorthand_stroke_continuity_metrics.get('num_components', 0)
+        shorthand_stroke_continuity_feature_score = 0.0  # Default
 
-        # Stroke continuity: higher continuity indicates shorthand
-        # Using metrics from the updated StrokeContinuityAnalyzer
-        num_endpoints = continuity_metrics.get('num_endpoints', 0)
-        num_components = continuity_metrics.get('num_components', 0)
+        if shorthand_num_components > 0:
+            # Ratio of endpoints per component. Lower ratio suggests more continuity (loops=0, lines=2).
+            shorthand_endpoint_ratio = shorthand_num_endpoints / shorthand_num_components
+            # Threshold for the ratio. Ratios above this are considered discontinuous. Tunable.
+            SHORTHAND_STROKE_CONTINUITY_ENDPOINT_RATIO_THRESHOLD = 5.0  # Higher threshold = more lenient
 
-        if num_components > 0:
-            # Calculate ratio of endpoints per component.
-            # Lower values (e.g., approaching 0 for loops, 2 for simple lines) suggest more continuity.
-            # Higher values suggest more breaks or complex/fragmented components.
-            endpoint_ratio = num_endpoints / num_components
-
-            # Define a threshold for the ratio. Ratios above this are considered highly discontinuous.
-            # A higher threshold is more lenient. Needs tuning based on expected shorthand characteristics.
-            # Example: If a ratio of 6 (e.g., 3 separate short lines) is considered discontinuous.
-            CONTINUITY_ENDPOINT_THRESHOLD = 6.0
-
-            # Calculate score: Higher score for lower ratios (more continuous).
-            # Linearly decreases from 1 (at ratio 0) to 0 (at or above the threshold).
-            continuity_score = max(0.0, 1.0 - (endpoint_ratio / CONTINUITY_ENDPOINT_THRESHOLD))
+            # Score decreases as ratio increases (less continuous). Max score for ratio 0.
+            shorthand_stroke_continuity_feature_score = max(0.0, 1.0 - (
+                    shorthand_endpoint_ratio / SHORTHAND_STROKE_CONTINUITY_ENDPOINT_RATIO_THRESHOLD))
         else:
-            # No components found (e.g., blank image or processing error), implies zero continuity.
-            continuity_score = 0.0
+            # No components implies zero continuity score? Or handle as edge case.
+            shorthand_stroke_continuity_feature_score = 0.0
 
-        # Symbol density: higher density indicates shorthand
-        density_index = symbol_density_metrics.get('density_index', 0)
-        density_score = min(1, max(0, density_index))
+        # --- Symbol Density Score ---
+        # Shorthand aims to be compact, thus higher density.
+        shorthand_density_index = shorthand_symbol_density_metrics.get('density_index', 0.0)
+        # Assuming density_index is normalized [0, 1], higher means denser.
+        shorthand_symbol_density_feature_score = min(1.0, max(0.0, shorthand_density_index))
 
-        # Combined shorthand score (equal weights)
-        shorthand_score = (continuity_score + curve_score + density_score) / 3
+        # --- Combined Shorthand Style Score ---
+        W_SHORTHAND_SMOOTHNESS = 1.1
+        W_SHORTHAND_CONTINUITY = 1.0
+        W_SHORTHAND_DENSITY = 1.2  # Density is important for shorthand efficiency
+        total_shorthand_weight = W_SHORTHAND_SMOOTHNESS + W_SHORTHAND_CONTINUITY + W_SHORTHAND_DENSITY
 
+        shorthand_style_score = (W_SHORTHAND_SMOOTHNESS * shorthand_curve_smoothness_feature_score +
+                                 W_SHORTHAND_CONTINUITY * shorthand_stroke_continuity_feature_score +
+                                 W_SHORTHAND_DENSITY * shorthand_symbol_density_feature_score) / total_shorthand_weight
 
-        # Convert all results to Python native types
-        response = {
-            "processed_image": processed_image,
-            # block lettering
-            "angularity": convert_numpy_types(angularity_results),
-            "aspect_ratio": convert_numpy_types(aspect_ratio_results),
-            "loop_detection": convert_numpy_types(loop_detection_results),
+        # =====================================================
+        # === FINAL RESPONSE ASSEMBLY ===
+        # =====================================================
 
-            # calligraphic
-            "continuous_part_coverage": convert_numpy_types(coverage_results),
-            "right_angle_corner_detection": convert_numpy_types(right_angle_results),
-            "stroke_width_variation": convert_numpy_types(stroke_width_results),
-
-            # cursive
-            "stroke_connectivity": convert_numpy_types(connectivity_results),
-            "enclosed_loop_ratio": convert_numpy_types(loop_results),
-            "curvature_continuity": convert_numpy_types(curvature_results),
-            "stroke_consistency": convert_numpy_types(consistency_results),
-
-            # italic
-            "vertical_stroke_proportion": convert_numpy_types(vertical_stroke_results),
-            "slant_angle": convert_numpy_types(slant_angle_results),
-            "inter_letter_spacing": convert_numpy_types(spacing_results),
-
-            # print
-            "vertical_alignment": convert_numpy_types(vertical_alignment_results),
-            "letter_size_uniformity": convert_numpy_types(letter_size_results),
-            "discrete_letter": convert_numpy_types(discrete_letter_results),
-
-            # shorthand
-            "stroke_continuity": convert_numpy_types(continuity_results),
-            "smooth_curves": convert_numpy_types(smooth_curves_results),
-            "symbol_density": convert_numpy_types(symbol_density_results),
-
-
-            "handwriting": {
+        # Convert all results to Python native types before sending JSON
+        response_data = {
+            "processed_image": processed_image_base64,  # Send back the processed image representation
+            # Include detailed results from each analyzer
+            "analysis_details": {
                 "block_lettering": {
-                    "score": float(block_lettering_score),
-                },
-                "cursive": {
-                    "score": float(cursive_score),
+                    "angularity": convert_numpy_types(angularity_results),
+                    "aspect_ratio": convert_numpy_types(aspect_ratio_results),
+                    "loop_detection": convert_numpy_types(loop_detection_results),
                 },
                 "calligraphic": {
-                    "score": float(calligraphic_score),
+                    "continuous_part_coverage": convert_numpy_types(coverage_results),
+                    "right_angle_corner_detection": convert_numpy_types(right_angle_results),
+                    "stroke_width_variation": convert_numpy_types(stroke_width_results),
+                },
+                "cursive": {
+                    "stroke_connectivity": convert_numpy_types(connectivity_results),
+                    "enclosed_loop_ratio": convert_numpy_types(loop_results),
+                    "curvature_continuity": convert_numpy_types(curvature_results),
+                    "stroke_consistency": convert_numpy_types(consistency_results),
                 },
                 "italic": {
-                    "score": float(italic_score),
-                },
-                "shorthand": {
-                    "score": float(shorthand_score),
+                    "vertical_stroke_proportion": convert_numpy_types(vertical_stroke_results),
+                    "slant_angle": convert_numpy_types(slant_angle_results),
+                    "inter_letter_spacing": convert_numpy_types(spacing_results),
                 },
                 "print": {
-                    "score": float(print_score),
+                    "vertical_alignment": convert_numpy_types(vertical_alignment_results),
+                    "letter_size_uniformity": convert_numpy_types(letter_size_results),
+                    "discrete_letter": convert_numpy_types(discrete_letter_results),
+                },
+                "shorthand": {
+                    # Use the correctly named variable here too
+                    "stroke_continuity": convert_numpy_types(shorthand_continuity_results),
+                    "smooth_curves": convert_numpy_types(smooth_curves_results),
+                    "symbol_density": convert_numpy_types(symbol_density_results),
+                }
+            },
+            # Include the calculated style scores
+            "handwriting_style_scores": {
+                "block_lettering": {
+                    "score": float(block_lettering_style_score),
+                    # Optionally include the component scores for debugging/info
+                    "component_scores": {
+                        "angularity": float(block_angularity_feature_score),
+                        "aspect_ratio_consistency": float(block_aspect_ratio_consistency_score),
+                        "loop_presence_inverse": float(block_loop_feature_score),
+                    }
+                },
+                "cursive": {
+                    "score": float(cursive_style_score),
+                    "component_scores": {
+                        "curvature_smoothness": float(cursive_curvature_feature_score),
+                        "stroke_connectivity": float(cursive_connectivity_feature_score),
+                        "enclosed_loop_ratio": float(cursive_loop_feature_score),
+                        "stroke_consistency": float(cursive_consistency_feature_score),
+                    }
+                },
+                "calligraphic": {
+                    "score": float(calligraphic_style_score),
+                    "component_scores": {
+                        "coverage": float(calligraphic_coverage_feature_score),
+                        "right_angle_inverse": float(calligraphic_right_angle_feature_score),
+                        "stroke_width_variation": float(calligraphic_width_variation_score),
+                    }
+                },
+                "italic": {
+                    "score": float(italic_style_score),
+                    "component_scores": {
+                        "spacing_uniformity": float(italic_spacing_feature_score),
+                        "slant": float(italic_slant_feature_score),
+                        "vertical_proportion": float(italic_vertical_proportion_score),
+                    }
+                },
+                "shorthand": {
+                    "score": float(shorthand_style_score),
+                    "component_scores": {
+                        "curve_smoothness": float(shorthand_curve_smoothness_feature_score),
+                        "stroke_continuity": float(shorthand_stroke_continuity_feature_score),
+                        "symbol_density": float(shorthand_symbol_density_feature_score),
+                    }
+                },
+                "print": {
+                    "score": float(print_style_score),
+                    "component_scores": {
+                        "vertical_alignment": float(print_vertical_alignment_feature_score),
+                        "size_uniformity": float(print_size_uniformity_feature_score),
+                        "letter_discreteness": float(print_discrete_letter_feature_score),
+                    }
                 },
             }
         }
 
-        return response
+        return JSONResponse(content=response_data)
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # Log the exception for debugging
+        import traceback
+        print(f"Error during analysis: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"An internal server error occurred: {e}")
 
 if __name__ == "__main__":
     import uvicorn
