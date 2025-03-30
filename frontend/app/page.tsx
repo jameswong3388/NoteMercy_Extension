@@ -27,24 +27,31 @@ interface HandwritingFeatures {
         shorthand: HandwritingStyle;
         print: HandwritingStyle;
     };
+    // block lettering
     angularity: any;
-    uppercase_ratio: any;
-    pen_pressure: any;
+    aspect_ratio: any;
+    loop_detection: any;
+    // italic
     vertical_stroke_proportion: any;
     slant_angle: any;
     inter_letter_spacing: any;
+    // cursive
     stroke_connectivity: any;
     enclosed_loop_ratio: any;
     curvature_continuity: any;
+    stroke_consistency: any;
+    // calligraphic
     stroke_width_variation: any;
-    flourish_extension: any;
-    artistic_consistency: any;
+    continuous_part_coverage: any;
+    right_angle_corner_detection: any;
+    // shorthand
     stroke_continuity: any;
     smooth_curves: any;
+    symbol_density: any;
+    // print
     vertical_alignment: any;
     letter_size_uniformity: any;
-    discrete_letter: any;
-    symbol_density: any,
+    discrete_letter: any,
     processed_image: string;
 }
 
@@ -133,8 +140,8 @@ export default function Home() {
     const featureGroups = features ? {
         "Block Lettering": [
             { name: "angularity", data: features.angularity },
-            { name: "uppercase_ratio", data: features.uppercase_ratio },
-            { name: "pen_pressure", data: features.pen_pressure }
+            { name: "uppercase_ratio", data: features.aspect_ratio },
+            { name: "pen_pressure", data: features.loop_detection }
         ],
         "Italic": [
             { name: "vertical_stroke_proportion", data: features.vertical_stroke_proportion },
@@ -144,12 +151,13 @@ export default function Home() {
         "Cursive": [
             { name: "stroke_connectivity", data: features.stroke_connectivity },
             { name: "enclosed_loop_ratio", data: features.enclosed_loop_ratio },
-            { name: "curvature_continuity", data: features.curvature_continuity }
+            { name: "curvature_continuity", data: features.curvature_continuity },
+            { name: "stroke_consistency", data: features.stroke_consistency }
         ],
         "Calligraphic": [
             { name: "stroke_width_variation", data: features.stroke_width_variation },
-            { name: "flourish_extension", data: features.flourish_extension },
-            { name: "artistic_consistency", data: features.artistic_consistency }
+            { name: "continuous_part_coverage", data: features.continuous_part_coverage },
+            { name: "right_angle_corner_detection", data: features.right_angle_corner_detection }
         ],
         "Shorthand": [
             { name: "stroke_continuity", data: features.stroke_continuity },
