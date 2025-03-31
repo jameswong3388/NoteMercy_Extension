@@ -411,9 +411,12 @@ async def analyze_image(request: ImageRequest):
         W_ITALIC_VERTICAL = 1.0
         total_italic_weight = W_ITALIC_SPACING + W_ITALIC_SLANT + W_ITALIC_VERTICAL
 
-        italic_style_score = (W_ITALIC_SPACING * italic_spacing_feature_score +
-                              W_ITALIC_SLANT * italic_slant_feature_score +
-                              W_ITALIC_VERTICAL * italic_vertical_proportion_score) / total_italic_weight
+        if italic_spacing_gap_count > MIN_GAPS_FOR_SEPARATION:
+            italic_style_score = (W_ITALIC_SPACING * italic_spacing_feature_score +
+                                  W_ITALIC_SLANT * italic_slant_feature_score +
+                                  W_ITALIC_VERTICAL * italic_vertical_proportion_score) / total_italic_weight
+        else:
+            italic_style_score = 0.0
 
 
         # =====================================================
