@@ -457,61 +457,63 @@ export default function Home() {
 
                 {/* Feature Detail Dialog */}
                 <Dialog open={showFeatureDialog} onOpenChange={setShowFeatureDialog}>
-                    <DialogContent className="max-w-4xl">
-                        <DialogHeader>
-                            <DialogTitle>
-                                {selectedFeature ? formatFeatureName(selectedFeature.split('.')[1] || '') : "Feature Details"}
-                            </DialogTitle>
-                        </DialogHeader>
-                        <div className="mt-4">
-                            {selectedFeatureData && (
-                                <div className="space-y-6">
-                                    {/* 1. Preprocessed Image Section (if available) */}
-                                    {selectedFeatureData.preprocessed_image && (
-                                        <div className="bg-card border rounded-lg p-4">
-                                            <h3 className="font-semibold mb-4">Preprocessed Image</h3>
-                                            <div className="flex justify-center overflow-hidden">
-                                                <PhotoView src={`data:image/png;base64,${selectedFeatureData.preprocessed_image}`}>
-                                                    <img
-                                                        src={`data:image/png;base64,${selectedFeatureData.preprocessed_image}`}
-                                                        alt="Preprocessed"
-                                                        className="max-w-full object-contain max-h-[300px] cursor-zoom-in"
-                                                    />
-                                                </PhotoView>
-                                            </div>
-                                        </div>
-                                    )}
-                                    
-                                    {/* 2. Data Section */}
-                                    <div className="bg-muted p-4 rounded-lg">
-                                        <h3 className="font-semibold mb-2">Data</h3>
-                                        <pre className="text-sm overflow-auto max-h-60 whitespace-pre-wrap break-words">
-                                            {JSON.stringify(selectedFeatureData.metrics || selectedFeatureData, null, 2)}
-                                        </pre>
-                                    </div>
-
-                                    {/* 3. Graph Visualization Section */}
-                                    <div className="bg-card border rounded-lg p-4">
-                                        <h3 className="font-semibold mb-4">Graph Visualization</h3>
-                                        {selectedFeatureData.graphs && selectedFeatureData.graphs.length > 0 ? (
-                                            <div className="flex justify-center overflow-hidden">
-                                                <PhotoView src={`data:image/png;base64,${selectedFeatureData.graphs[0]}`}>
-                                                    <img
-                                                        src={`data:image/png;base64,${selectedFeatureData.graphs[0]}`}
-                                                        alt={`${selectedFeature?.split('.')[1]} graph`}
-                                                        className="max-w-full object-contain max-h-[300px] cursor-zoom-in"
-                                                    />
-                                                </PhotoView>
-                                            </div>
-                                        ) : (
-                                            <div className="text-center text-muted-foreground p-8">
-                                                No graph data available for this feature.
+                    <DialogContent className="max-w-4xl max-h-[90vh]">
+                        <PhotoProvider>
+                            <DialogHeader>
+                                <DialogTitle>
+                                    {selectedFeature ? formatFeatureName(selectedFeature.split('.')[1] || '') : "Feature Details"}
+                                </DialogTitle>
+                            </DialogHeader>
+                            <ScrollArea className="mt-4 max-h-[calc(90vh-80px)]">
+                                {selectedFeatureData && (
+                                    <div className="space-y-6">
+                                        {/* 1. Preprocessed Image Section (if available) */}
+                                        {selectedFeatureData.preprocessed_image && (
+                                            <div className="bg-card border rounded-lg p-4">
+                                                <h3 className="font-semibold mb-4">Preprocessed Image</h3>
+                                                <div className="flex justify-center overflow-hidden">
+                                                    <PhotoView src={`data:image/png;base64,${selectedFeatureData.preprocessed_image}`}>
+                                                        <img
+                                                            src={`data:image/png;base64,${selectedFeatureData.preprocessed_image}`}
+                                                            alt="Preprocessed"
+                                                            className="max-w-full object-contain max-h-[300px] cursor-zoom-in"
+                                                        />
+                                                    </PhotoView>
+                                                </div>
                                             </div>
                                         )}
+                                        
+                                        {/* 2. Data Section */}
+                                        <div className="bg-muted p-4 rounded-lg">
+                                            <h3 className="font-semibold mb-2">Data</h3>
+                                            <pre className="text-sm overflow-auto max-h-60 whitespace-pre-wrap break-words">
+                                                {JSON.stringify(selectedFeatureData.metrics || selectedFeatureData, null, 2)}
+                                            </pre>
+                                        </div>
+
+                                        {/* 3. Graph Visualization Section */}
+                                        <div className="bg-card border rounded-lg p-4">
+                                            <h3 className="font-semibold mb-4">Graph Visualization</h3>
+                                            {selectedFeatureData.graphs && selectedFeatureData.graphs.length > 0 ? (
+                                                <div className="flex justify-center overflow-hidden">
+                                                    <PhotoView src={`data:image/png;base64,${selectedFeatureData.graphs[0]}`}>
+                                                        <img
+                                                            src={`data:image/png;base64,${selectedFeatureData.graphs[0]}`}
+                                                            alt={`${selectedFeature?.split('.')[1]} graph`}
+                                                            className="max-w-full object-contain max-h-[300px] cursor-zoom-in"
+                                                        />
+                                                    </PhotoView>
+                                                </div>
+                                            ) : (
+                                                <div className="text-center text-muted-foreground p-8">
+                                                    No graph data available for this feature.
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
-                        </div>
+                                )}
+                            </ScrollArea>
+                        </PhotoProvider>
                     </DialogContent>
                 </Dialog>
             </PhotoProvider>
