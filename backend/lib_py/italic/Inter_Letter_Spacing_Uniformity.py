@@ -138,6 +138,12 @@ class LetterSpacingAnalyzer:
             plt.close()
             result['graphs'].append(plot_base64)
 
+        # Preprocessed image base64
+        _, preprocessed_image_encoded = cv2.imencode(".png", binary)
+        preprocessed_image_base64 = base64.b64encode(preprocessed_image_encoded).decode('utf-8')
+
+        result['preprocessed_image'] = preprocessed_image_base64
+
         return result
 
 

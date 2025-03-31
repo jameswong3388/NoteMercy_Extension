@@ -153,7 +153,6 @@ class AspectRatioAnalyzer:
                 # count_filtered_perimeter += 1
                 continue
 
-
             # Passed all filters
             self.letter_contours.append(cnt)
             self.letter_bboxes.append((x, y, w, h))
@@ -289,12 +288,16 @@ class AspectRatioAnalyzer:
 
         result = {
             'metrics': metrics,
-            'graphs': []
+            'graphs': [],
+            'preprocessed_image': None,
         }
 
         # --- 6. Generate Visualization (Optional) ---
         if debug:
             result['graphs'] = self._generate_visualization(metrics=metrics)
+            if self.binary_image is not None:
+              _, preprocessed_buffer = cv2.imencode('.png', self.binary_image)
+              result['preprocessed_image'] = base64.b64encode(preprocessed_buffer).decode('utf-8')
 
         # --- 7. Return Results ---
         return result
@@ -326,3 +329,9 @@ if __name__ == "__main__":
         img_data = base64.b64decode(results['graphs'][0])
         img = Image.open(io.BytesIO(img_data))
         img.show()
+
+    if results['preprocessed_image']:
+      print("\nDisplaying preprocessed image...")
+      img_data = base64.b64decode(results['preprocessed_image'])
+      img = Image.open(io.BytesIO(img_data))
+      img.show()

@@ -242,38 +242,17 @@ class RightAngleAnalyzer:
         # Add graphs only if debug is True and no error occurred
         if debug and 'error' not in self.metrics:
             try:
-                result['graphs'] = self._generate_visualization()
+                graphs = self._generate_visualization()
+                result['graphs'] = graphs
             except Exception as e:
                 print(f"Error generating visualization: {e}")
                 result['graphs'] = []  # Ensure graphs key exists but is empty
         else:
             result['graphs'] = []  # Ensure graphs key exists but is empty
 
+        # Add preprocessed image
+        _, preprocessed_image_buffer = cv2.imencode(".png", self.binary_image)
+        preprocessed_image_base64 = base64.b64encode(preprocessed_image_buffer).decode('utf-8')
+        result['preprocessed_image'] = preprocessed_image_base64
+
         return result
-
-
-# === Example Usage ===
-if __name__ == "__main__":
-    image_path = r"C:\Users\Samson\Desktop\Coding\IPPR\NoteMercy_Extension\backend\atest\block-letters.jpg"
-    analyzer = RightAngleAnalyzer(image_path, is_base64=False)
-    results = analyzer.analyze(debug=True)
-    # print(results)
-
-    # Print metrics in a readable format
-    print("\n===== Aspect Ratio Analysis Results =====")
-    metrics = results['metrics']
-    for key, value in metrics.items():
-        if isinstance(value, float):
-            print(f"{key}: {value:.4f}")
-        else:
-            print(f"{key}: {value}")
-
-    # Display the image directly without saving
-    if results['graphs']:
-        from PIL import Image
-        import io
-
-        print("\nDisplaying visualization...")
-        img_data = base64.b64decode(results['graphs'][0])
-        img = Image.open(io.BytesIO(img_data))
-        img.show()

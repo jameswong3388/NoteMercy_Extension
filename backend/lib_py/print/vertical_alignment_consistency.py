@@ -196,7 +196,7 @@ class VerticalAlignmentAnalyzer:
                 'component_count': 0,
                 'line_count': 0
             }
-            return {'metrics': metrics, 'graphs': []}
+            return {'metrics': metrics, 'graphs': [],'preprocessed_image':''}
 
         valid_stats = stats[valid_indices]
         valid_centroids = centroids[valid_indices]
@@ -319,7 +319,7 @@ class VerticalAlignmentAnalyzer:
             'line_count': int(line_count)
         }
 
-        result = {'metrics': metrics, 'graphs': []}
+        result = {'metrics': metrics, 'graphs': [],'preprocessed_image':''}
 
         # --- Debug Visualization ---
         if debug:
@@ -392,6 +392,10 @@ class VerticalAlignmentAnalyzer:
             plt.close(fig) # Close the figure to free memory
 
             result['graphs'].append(plot_base64)
+            # Preprocessed image to base64
+            _, preprocessed_image_buffer = cv2.imencode('.png', binary)
+            preprocessed_image_base64 = base64.b64encode(preprocessed_image_buffer).decode('utf-8')
+            result['preprocessed_image'] = preprocessed_image_base64
 
         return result
 
@@ -413,6 +417,8 @@ if __name__ == "__main__":
              # Optionally save the debug graph
              # with open("debug_print.png", "wb") as f:
              #     f.write(base64.b64decode(results_print['graphs'][0]))
+        if results_print['preprocessed_image']:
+            print('preprocessed image generated (base64 string)')
 
     except ValueError as e:
         print(f"Error processing print image: {e}")
@@ -432,6 +438,8 @@ if __name__ == "__main__":
              # Optionally save the debug graph
              # with open("debug_cursive.png", "wb") as f:
              #     f.write(base64.b64decode(results_cursive['graphs'][0]))
+        if results_cursive['preprocessed_image']:
+            print('preprocessed image generated (base64 string)')
 
     except ValueError as e:
         print(f"Error processing cursive image: {e}")

@@ -250,6 +250,11 @@ class ContinuousPartCoverageAnalyzer:
             else:
                 print("Warning: Skipping visualization due to missing plot data.")
 
+        # Preprocess the image and convert to base64
+        _, buffer = cv2.imencode('.png', self.binary_image)
+        preprocessed_image_base64 = base64.b64encode(buffer).decode('utf-8')
+        result['preprocessed_image'] = preprocessed_image_base64
+
         return result
 
 
@@ -276,3 +281,7 @@ if __name__ == "__main__":
         img_data = base64.b64decode(results['graphs'][0])
         img = Image.open(io.BytesIO(img_data))
         img.show()
+    print("\nDisplaying preprocessed_image...")
+    preprocessed_img_data = base64.b64decode(results['preprocessed_image'])
+    preprocessed_img = Image.open(io.BytesIO(preprocessed_img_data))
+    preprocessed_img.show()

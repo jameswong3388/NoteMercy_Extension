@@ -96,7 +96,7 @@ class LetterUniformityAnalyzer:
                 'avg_stroke_width': 0,
                 'letter_count': 0
             }
-            return {'metrics': metrics, 'graphs': []}
+            return {'metrics': metrics, 'graphs': [], 'preprocessed_image': None}
 
         # ---------------------------------------------------------------------------
         # 5) Compute metrics (height, width, aspect ratio, stroke width, pen pressure)
@@ -164,7 +164,8 @@ class LetterUniformityAnalyzer:
 
         result = {
             'metrics': metrics,
-            'graphs': []
+            'graphs': [],
+            'preprocessed_image': None
         }
 
         # -----------------------------------------------------
@@ -226,6 +227,11 @@ class LetterUniformityAnalyzer:
             plt.close()
 
             result['graphs'].append(plot_base64)
+
+            #Preprocessed image to base64
+            _, preprocessed_buffer = cv2.imencode('.png', binary)
+            preprocessed_base64 = base64.b64encode(preprocessed_buffer).decode('utf-8')
+            result['preprocessed_image'] = preprocessed_base64
 
         return result
 

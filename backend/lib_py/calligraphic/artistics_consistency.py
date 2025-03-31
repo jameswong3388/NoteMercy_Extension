@@ -57,8 +57,8 @@ class CalligraphicAnalyzer:
         current = start_point
         # Define 8-connected neighborhood offsets.
         neighbors_offset = [(-1, -1), (-1, 0), (-1, 1),
-                              (0, -1), (0, 1),
-                              (1, -1), (1, 0), (1, 1)]
+                            (0, -1), (0, 1),
+                            (1, -1), (1, 0), (1, 1)]
 
         while True:
             found_next = False
@@ -131,7 +131,7 @@ class CalligraphicAnalyzer:
                 'serif_consistency': 0,
                 'overall_artistic_score': 0
             }
-            return {'metrics': metrics, 'graphs': []}
+            return {'metrics': metrics, 'graphs': [], 'preprocessed_image': ''}
 
         width_std = np.std(widths)
         mean_width = np.mean(widths)
@@ -207,7 +207,8 @@ class CalligraphicAnalyzer:
 
         result = {
             'metrics': metrics,
-            'graphs': []
+            'graphs': [],
+            'preprocessed_image': ''
         }
 
         if debug:
@@ -258,15 +259,25 @@ class CalligraphicAnalyzer:
             ax[5].set_title('Feature Scores')
 
             plt.tight_layout()
-            
+
             # Convert plot to base64
             buf = BytesIO()
             plt.savefig(buf, format='png', bbox_inches='tight')
             buf.seek(0)
             plot_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
             plt.close()
-            
+
             result['graphs'].append(plot_base64)
+
+            # preprocessed image to base64
+            buf2 = BytesIO()
+            plt.imshow(self.binary, cmap='gray')
+            plt.axis('off')
+            plt.savefig(buf2, format='png', bbox_inches='tight')
+            plt.close()
+            buf2.seek(0)
+            preprocessed_base64 = base64.b64encode(buf2.getvalue()).decode('utf-8')
+            result['preprocessed_image'] = preprocessed_base64
 
         return result
 

@@ -4,7 +4,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from helper import preprocess_image
 from lib_py.block_lettering.angularity import AngularityAnalyzer
 from lib_py.block_lettering.aspect_ratio import AspectRatioAnalyzer
 from lib_py.block_lettering.loop_detection import LoopDetectionAnalyzer
@@ -77,9 +76,6 @@ def convert_numpy_types(obj):
 @app.post("/api/v1/extract")
 async def analyze_image(request: ImageRequest):
     try:
-        # Preprocess the image
-        processed_image_base64 = preprocess_image(request.image)
-
         # - Feature Extraction - #
         # Instantiate all analyzers with the original base64 image data
         angularity_analyzer = AngularityAnalyzer(request.image, is_base64=True)
@@ -362,28 +358,40 @@ async def analyze_image(request: ImageRequest):
         italic_spacing_feature_score = max(0.0, min(1.0, italic_spacing_feature_score))
 
         # --- Slant Angle Score ---
-        # Significant, consistent slant is the defining feature of italic.
-        italic_absolute_vertical_slant = abs(italic_slant_metrics.get('vertical_slant', 0))
-        italic_slant_threshold_config = italic_slant_metrics.get('italic_threshold',
-                                                                 8)  # Configured threshold from analyzer
-        italic_slant_std_dev = italic_slant_metrics.get('slant_std', 0)
+        # The defining feature: Does it slant consistently beyond the threshold?
+        italic_is_slant_detected = italic_slant_metrics.get('is_italic', False)  # Key flag from analyzer
+        italic_vertical_slant = italic_slant_metrics.get('vertical_slant', 0.0)  # Actual average slant
+        italic_slant_threshold_config = italic_slant_metrics.get('italic_threshold', 8.0)  # Threshold used
+        italic_slant_std_dev = italic_slant_metrics.get('slant_std', 0.0)  # Consistency metric
 
-        # Score based on angle magnitude relative to threshold
-        ITALIC_SLANT_ANGLE_FOR_MAX_SCORE = italic_slant_threshold_config + 10  # e.g., 18 degrees for max score if threshold is 8
-        italic_slant_magnitude_score = 0.0
-        if ITALIC_SLANT_ANGLE_FOR_MAX_SCORE > 0:
-            italic_slant_magnitude_score = min(1.0, max(0.0,
-                                                        italic_absolute_vertical_slant / ITALIC_SLANT_ANGLE_FOR_MAX_SCORE))
+        italic_slant_feature_score = 0.0  # Default to zero
 
-        # Penalize inconsistency (high standard deviation)
-        ITALIC_SLANT_STD_DEV_PENALTY_THRESHOLD = 10.0  # Above this std dev, start penalizing
-        slant_consistency_penalty = 0.0
-        if italic_slant_std_dev > ITALIC_SLANT_STD_DEV_PENALTY_THRESHOLD:
-            # Example penalty: Reduce score by up to 25% for very high std dev
-            slant_consistency_penalty = min(0.25, (
-                    italic_slant_std_dev - ITALIC_SLANT_STD_DEV_PENALTY_THRESHOLD) / 20.0)  # Tunable
+        if italic_is_slant_detected:
+            # Slant detected (average angle > threshold). Now score based on magnitude and consistency.
+            # 1. Magnitude Component: How much does it exceed the threshold?
+            slant_excess = abs(italic_vertical_slant) - italic_slant_threshold_config
+            TARGET_EXCESS_FOR_MAX_SCORE = 10.0  # e.g., angle 10 degrees *above* threshold gets max magnitude score
+            BASE_SCORE_ON_THRESHOLD = 0.5  # Base score just for meeting the threshold
 
-        italic_slant_feature_score = italic_slant_magnitude_score * (1.0 - slant_consistency_penalty)
+            # Scale the score between BASE_SCORE and 1.0 based on excess slant
+            magnitude_component = min(1.0, max(0.0,
+                                               slant_excess / TARGET_EXCESS_FOR_MAX_SCORE if TARGET_EXCESS_FOR_MAX_SCORE > 0 else 0.0))
+            magnitude_score = BASE_SCORE_ON_THRESHOLD + (1.0 - BASE_SCORE_ON_THRESHOLD) * magnitude_component
+
+            # 2. Consistency Penalty: Penalize high standard deviation
+            ITALIC_SLANT_STD_DEV_PENALTY_THRESHOLD = 10.0  # Start penalizing above this std dev
+            MAX_CONSISTENCY_PENALTY = 0.30  # Reduce score by max 30% for very high inconsistency
+
+            slant_consistency_penalty = 0.0
+            if italic_slant_std_dev > ITALIC_SLANT_STD_DEV_PENALTY_THRESHOLD:
+                # Linear penalty increase above threshold, capped at MAX_PENALTY
+                penalty_factor = (italic_slant_std_dev - ITALIC_SLANT_STD_DEV_PENALTY_THRESHOLD) / (
+                            2 * ITALIC_SLANT_STD_DEV_PENALTY_THRESHOLD)  # Tunable denominator
+                slant_consistency_penalty = min(MAX_CONSISTENCY_PENALTY, max(0.0, penalty_factor))
+
+            # 3. Final Slant Feature Score
+            italic_slant_feature_score = magnitude_score * (1.0 - slant_consistency_penalty)
+            italic_slant_feature_score = max(0.0, min(1.0, italic_slant_feature_score))  # Clamp final score
 
 
         # --- Vertical Stroke Proportion Score ---
@@ -407,7 +415,7 @@ async def analyze_image(request: ImageRequest):
 
         # --- Combined Italic Style Score ---
         W_ITALIC_SPACING = 0.8
-        W_ITALIC_SLANT = 1.5  # Slant is most important
+        W_ITALIC_SLANT = 1.2  # Slant is most important
         W_ITALIC_VERTICAL = 1.0
         total_italic_weight = W_ITALIC_SPACING + W_ITALIC_SLANT + W_ITALIC_VERTICAL
 
@@ -565,7 +573,6 @@ async def analyze_image(request: ImageRequest):
 
         # Convert all results to Python native types before sending JSON
         response_data = {
-            "processed_image": processed_image_base64,  # Send back the processed image representation
             # Include detailed results from each analyzer
             "analysis_details": {
                 "block_lettering": {

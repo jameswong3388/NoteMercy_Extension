@@ -96,7 +96,7 @@ class CursiveCurvatureAnalyzer:
         Generate visualization plots and return them as base64 encoded images.
         """
         graphs = []
-        
+
         # Draw contours and the simplified polygons on a copy of the original image
         debug_img = self.img.copy()
         cv2.drawContours(debug_img, self.contours, -1, (0, 255, 0), 2)
@@ -128,14 +128,14 @@ class CursiveCurvatureAnalyzer:
         plt.ylabel("Frequency")
 
         plt.tight_layout()
-        
+
         # Convert plot to base64
         buf = BytesIO()
         plt.savefig(buf, format='png', bbox_inches='tight')
         buf.seek(0)
         plot_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
         plt.close()
-        
+
         graphs.append(plot_base64)
         return graphs
 
@@ -156,8 +156,14 @@ class CursiveCurvatureAnalyzer:
 
         result = {
             'metrics': metrics,
-            'graphs': []
+            'graphs': [],
+            'preprocessed_image': ''
         }
+
+        if debug:
+            _, buffer = cv2.imencode('.png', self.binary)
+            preprocessed_image_base64 = base64.b64encode(buffer).decode('utf-8')
+            result['preprocessed_image'] = preprocessed_image_base64
 
         if debug and self.segment_lengths:
             H = self.binary.shape[0]

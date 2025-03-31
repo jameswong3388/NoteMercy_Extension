@@ -20,7 +20,6 @@ interface HandwritingStyle {
 }
 
 interface HandwritingFeatures {
-    processed_image: string;
     handwriting_style_scores: {
         block_lettering: HandwritingStyle;
         cursive: HandwritingStyle;
@@ -69,7 +68,6 @@ registerPlugin(FilePondPluginImageExifOrientation, FilePondPluginImagePreview);
 
 export default function Home() {
     const [originalImage, setOriginalImage] = useState<string | null>(null);
-    const [processedImage, setProcessedImage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [features, setFeatures] = useState<HandwritingFeatures | null>(null);
@@ -108,7 +106,6 @@ export default function Home() {
                         }
 
                         const data = await response.json();
-                        setProcessedImage(data.processed_image);
                         setFeatures(data);
                         resolve(data);
                     } catch (error) {
@@ -128,7 +125,6 @@ export default function Home() {
         } catch (error) {
             console.error('Error processing image:', error);
             setError(error instanceof Error ? error.message : 'An error occurred while processing the image');
-            setProcessedImage(null);
         } finally {
             setIsLoading(false);
         }
@@ -203,7 +199,7 @@ export default function Home() {
             <ResizablePanelGroup direction="horizontal" className="h-full rounded-lg border">
                 <ResizablePanel defaultSize={30} minSize={30}>
                     <ResizablePanelGroup direction="vertical" className="h-full">
-                        <ResizablePanel defaultSize={20} minSize={20}>
+                        <ResizablePanel defaultSize={30} minSize={30}>
                             <ScrollArea className="h-full p-4">
                                 <h2 className="text-lg font-bold mb-4">Upload Handwriting</h2>
                                 <FilePond
@@ -222,7 +218,7 @@ export default function Home() {
                             </ScrollArea>
                         </ResizablePanel>
                         <ResizableHandle withHandle />
-                        <ResizablePanel defaultSize={40} minSize={20}>
+                        <ResizablePanel defaultSize={70} minSize={40}>
                             <ScrollArea className="h-full p-4">
                                 <h2 className="text-lg font-bold mb-4">Original Image</h2>
                                 <div className="flex items-center justify-center h-[calc(100%-2rem)]">
@@ -230,23 +226,6 @@ export default function Home() {
                                         <img src={originalImage} alt="Original" className="max-w-full max-h-full" />
                                     ) : (
                                         <span className="text-muted-foreground">Original image will appear here</span>
-                                    )}
-                                </div>
-                            </ScrollArea>
-                        </ResizablePanel>
-                        <ResizableHandle withHandle />
-                        <ResizablePanel defaultSize={40} minSize={20}>
-                            <ScrollArea className="h-full p-4">
-                                <h2 className="text-lg font-bold mb-4">Pre-processed Image</h2>
-                                <div className="flex items-center justify-center h-[calc(100%-2rem)]">
-                                    {isLoading ? (
-                                        <span className="text-muted-foreground">Processing image...</span>
-                                    ) : error ? (
-                                        <span className="text-red-500">{error}</span>
-                                    ) : processedImage ? (
-                                        <img src={`data:image/jpeg;base64,${processedImage}`} alt="Processed" className="max-w-full max-h-full" />
-                                    ) : (
-                                        <span className="text-muted-foreground">Pre-processed image will appear here</span>
                                     )}
                                 </div>
                             </ScrollArea>
@@ -259,7 +238,15 @@ export default function Home() {
                         <ResizablePanel defaultSize={50} minSize={30}>
                             <ScrollArea className="h-full p-4">
                                 <h2 className="text-lg font-bold mb-4">Extracted Features</h2>
-                                {features ? (
+                                {isLoading ? (
+                                    <div className="flex items-center justify-center h-[calc(100%-2rem)]">
+                                        <span className="text-muted-foreground">Processing image...</span>
+                                    </div>
+                                ) : error ? (
+                                    <div className="flex items-center justify-center h-[calc(100%-2rem)]">
+                                        <span className="text-red-500">{error}</span>
+                                    </div>
+                                ) : features ? (
                                     <Tabs defaultValue="Block Lettering" className="w-full">
                                         <TabsList className="grid grid-cols-6 mb-4">
                                             {featureGroups && Object.keys(featureGroups).map((group) => (
@@ -465,7 +452,7 @@ export default function Home() {
 
             {/* Feature Detail Dialog */}
             <Dialog open={showFeatureDialog} onOpenChange={setShowFeatureDialog}>
-                <DialogContent className="max-w-3xl">
+                <DialogContent className="max-w-4xl">
                     <DialogHeader>
                         <DialogTitle>
                             {selectedFeature ? formatFeatureName(selectedFeature.split('.')[1] || '') : "Feature Details"}
@@ -473,14 +460,30 @@ export default function Home() {
                     </DialogHeader>
                     <div className="mt-4">
                         {selectedFeatureData && (
-                            <div className="space-y-4">
+                            <div className="space-y-6">
+                                {/* 1. Preprocessed Image Section (if available) */}
+                                {selectedFeatureData.preprocessed_image && (
+                                    <div className="bg-card border rounded-lg p-4">
+                                        <h3 className="font-semibold mb-4">Preprocessed Image</h3>
+                                        <div className="flex justify-center overflow-hidden">
+                                            <img
+                                                src={`data:image/png;base64,${selectedFeatureData.preprocessed_image}`}
+                                                alt="Preprocessed"
+                                                className="max-w-full object-contain max-h-[300px]"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {/* 2. Data Section */}
                                 <div className="bg-muted p-4 rounded-lg">
                                     <h3 className="font-semibold mb-2">Data</h3>
-                                    <pre className="text-sm overflow-auto max-h-40 whitespace-pre-wrap break-words">
+                                    <pre className="text-sm overflow-auto max-h-60 whitespace-pre-wrap break-words">
                                         {JSON.stringify(selectedFeatureData.metrics || selectedFeatureData, null, 2)}
                                     </pre>
                                 </div>
 
+                                {/* 3. Graph Visualization Section */}
                                 <div className="bg-card border rounded-lg p-4">
                                     <h3 className="font-semibold mb-4">Graph Visualization</h3>
                                     {selectedFeatureData.graphs && selectedFeatureData.graphs.length > 0 ? (
@@ -488,7 +491,7 @@ export default function Home() {
                                             <img
                                                 src={`data:image/png;base64,${selectedFeatureData.graphs[0]}`}
                                                 alt={`${selectedFeature?.split('.')[1]} graph`}
-                                                className="max-w-full object-contain max-h-[400px]"
+                                                className="max-w-full object-contain max-h-[300px]"
                                             />
                                         </div>
                                     ) : (

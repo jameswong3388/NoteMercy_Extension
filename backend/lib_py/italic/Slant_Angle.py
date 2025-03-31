@@ -191,6 +191,10 @@ class SlantAngleAnalyzer:
 
         return [plot_base64]  # Return as a list containing one plot
 
+    def _encode_image_to_base64(self, image):
+        """Encodes a given image to base64."""
+        _, buffer = cv2.imencode('.png', image)
+        return base64.b64encode(buffer).decode('utf-8')
 
     def analyze(self, debug=False, italic_threshold=8):
         """
@@ -206,6 +210,7 @@ class SlantAngleAnalyzer:
                   'metrics': A dict of calculated slant metrics.
                   'graphs': A list of base64 encoded PNG strings of the debug plots
                             (only if debug=True and data is available).
+                  'preprocessed_image': base64 encoded preprocessed image.
         """
         self._preprocess_image()
         self.slant_angles, self.ellipses = self._calculate_slant_angles()  # Get ellipses too
@@ -253,72 +258,6 @@ class SlantAngleAnalyzer:
         if debug:
             result['graphs'] = self._generate_debug_plots(metrics)
 
+        result['preprocessed_image'] = self._encode_image_to_base64(cv2.cvtColor(self.gray_img, cv2.COLOR_GRAY2BGR))
+
         return result
-
-
-# Example usage:
-if __name__ == "__main__":
-    # Create dummy images for testing (replace with actual paths)
-    # 1. Vertical Text
-    img_v = np.zeros((100, 200), dtype=np.uint8)
-    cv2.putText(img_v, "Vertical", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1.5, 255, 3)
-    cv2.imwrite("vertical_text.png", img_v)
-
-    # 2. Italic Text
-    img_i = np.zeros((100, 200), dtype=np.uint8)
-    cv2.putText(img_i, "Italic", (10, 70), cv2.FONT_HERSHEY_SIMPLEX | cv2.FONT_ITALIC, 1.5, 255, 3)
-    cv2.imwrite("italic_text.png", img_i)
-
-    # --- Analyze Vertical Text ---
-    print("--- Analyzing Vertical Text ---")
-    try:
-        analyzer_v = SlantAngleAnalyzer("vertical_text.png")
-        results_v = analyzer_v.analyze(debug=True, italic_threshold=8)
-        print("Metrics:", results_v['metrics'])
-        if results_v['graphs']:
-            print(f"Generated {len(results_v['graphs'])} graph(s).")
-            # To display the graph (optional, requires a GUI backend usually):
-            # img_data = base64.b64decode(results_v['graphs'][0])
-            # nparr = np.frombuffer(img_data, np.uint8)
-            # plot_img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            # cv2.imshow("Vertical Analysis Plot", plot_img)
-            # cv2.waitKey(0)
-            # cv2.destroyAllWindows()
-        else:
-            print("No graphs generated (likely no components found).")
-
-    except ValueError as e:
-        print(f"Error analyzing vertical text: {e}")
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-
-    print("\n--- Analyzing Italic Text ---")
-    try:
-        analyzer_i = SlantAngleAnalyzer("italic_text.png")
-        results_i = analyzer_i.analyze(debug=True, italic_threshold=8)
-        print("Metrics:", results_i['metrics'])
-        if results_i['graphs']:
-            print(f"Generated {len(results_i['graphs'])} graph(s).")
-            # Optional: Display the italic analysis plot
-            # img_data = base64.b64decode(results_i['graphs'][0])
-            # nparr = np.frombuffer(img_data, np.uint8)
-            # plot_img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            # cv2.imshow("Italic Analysis Plot", plot_img)
-            # cv2.waitKey(0)
-            # cv2.destroyAllWindows()
-        else:
-            print("No graphs generated (likely no components found).")
-
-    except ValueError as e:
-        print(f"Error analyzing italic text: {e}")
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-
-    # Clean up dummy images
-    import os
-
-    try:
-        os.remove("vertical_text.png")
-        os.remove("italic_text.png")
-    except OSError:
-        pass  # Ignore if files don't exist

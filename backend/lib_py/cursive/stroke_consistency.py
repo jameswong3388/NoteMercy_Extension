@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
 import base64
 from skimage.morphology import skeletonize
 
@@ -15,7 +14,6 @@ class StrokeConsistencyAnalyzer:
             is_base64 (bool): If True, image_input is treated as base64 string, else as file path
         """
         if is_base64:
-            import base64  # Import only if needed
             # Decode base64 image
             try:
                 img_data = base64.b64decode(image_input)
@@ -276,12 +274,16 @@ class StrokeConsistencyAnalyzer:
             dict: Contains 'metrics' dict and 'graphs' list (empty if debug=False).
                   On error, 'metrics' may contain an 'error' key.
         """
-        analysis_output = {'metrics': {}, 'graphs': []}
+        analysis_output = {'metrics': {}, 'graphs': [], 'preprocessed_image': None}
         try:
             self.preprocess_image()
             self.extract_words()
             analysis_output['metrics'] = self.compute_stroke_consistency()
 
+            if self.binary is not None:
+                _, preprocessed_img_encoded = cv2.imencode('.png', self.binary)
+                preprocessed_img_base64 = base64.b64encode(preprocessed_img_encoded).decode('utf-8')
+                analysis_output['preprocessed_image'] = preprocessed_img_base64
         except ValueError as e:
             print(f"ValueError during analysis: {e}")
             analysis_output['metrics'] = {"error": str(e)}
@@ -297,7 +299,6 @@ class StrokeConsistencyAnalyzer:
             # --- Visualization (Import dependencies only if needed) ---
             try:
                 import matplotlib.pyplot as plt
-                import base64
                 from io import BytesIO
 
                 fig = plt.figure(figsize=(12, 8))  # Adjusted size slightly
@@ -370,7 +371,7 @@ class StrokeConsistencyAnalyzer:
 
 if __name__ == "__main__":
     # Example usage with file paths:
-    image_path = r"C:\Users\Samson\Desktop\Coding\IPPR\NoteMercy_Extension\backend\atest\calligraphic2.png"
+    image_path = "../../atest/1.png"
     analyzer = StrokeConsistencyAnalyzer(image_path, is_base64=False)
     results = analyzer.analyze(debug=True)
 
@@ -391,3 +392,7 @@ if __name__ == "__main__":
         img_data_cursive = base64.b64decode(results['graphs'][0])
         img = Image.open(io.BytesIO(img_data_cursive))
         img.show()
+
+    if results['preprocessed_image']:
+        print("\nPreprocessed Image (Base64):")
+        print(results['preprocessed_image'][:100] + "...")  # Print first 100 char for brevity

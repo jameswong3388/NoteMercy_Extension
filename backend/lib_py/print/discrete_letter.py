@@ -87,7 +87,7 @@ class DiscreteLetterAnalyzer:
                 'avg_solidity': np.mean(solidities)
             })
 
-        result = {'metrics': metrics, 'graphs': []}
+        result = {'metrics': metrics, 'graphs': [], 'preprocessed_image': ''}
 
         # Debug visualization
         if debug:
@@ -116,6 +116,10 @@ class DiscreteLetterAnalyzer:
             result['graphs'].append(base64.b64encode(buf.getvalue()).decode('utf-8'))
             plt.show()
             plt.close()
+
+            # Preprocessed image base64
+            _, preprocessed_image_buffer = cv2.imencode('.png', cleaned.astype(np.uint8) * 255)
+            result['preprocessed_image'] = base64.b64encode(preprocessed_image_buffer).decode('utf-8')
 
         return result
 

@@ -229,6 +229,16 @@ class SymbolDensityAnalyzer:
                 plt.close(fig)  # Close the figure
                 result['graphs'].append(plot_base64)
 
+                # Preprocessed image base64
+                _, preprocessed_image_buf = cv2.imencode('.png', (cleaned_binary*255).astype(np.uint8))
+                preprocessed_image_base64 = base64.b64encode(preprocessed_image_buf).decode('utf-8')
+                result['preprocessed_image'] = preprocessed_image_base64
+
+            else:
+                _, preprocessed_image_buf = cv2.imencode('.png', (cleaned_binary*255).astype(np.uint8))
+                preprocessed_image_base64 = base64.b64encode(preprocessed_image_buf).decode('utf-8')
+                result['preprocessed_image'] = preprocessed_image_base64
+
             return result
 
         except Exception as e:
@@ -236,42 +246,3 @@ class SymbolDensityAnalyzer:
             import traceback
             traceback.print_exc()
             return None  # Indicate failure
-
-
-# --- Example Usage ---
-if __name__ == '__main__':
-
-    # --- Option 1: Read from a file path ---
-    # <<< Replace this with the actual path to your image file >>>
-    image_file_path = "../../atest/shorthand2.png"
-    print(f"Attempting to analyze image from path: {image_file_path}")
-    try:
-        analyzer = SymbolDensityAnalyzer(image_file_path, is_base64=False) # is_base64=False is default
-
-        # Analyze the image
-        analysis_result = analyzer.analyze(debug=True) # Keep debug=True to see plots
-
-        if analysis_result:
-            print("\n--- Metrics ---")
-            for key, value in analysis_result['metrics'].items():
-                print(f"{key}: {value:.4f}")
-
-            print("\n--- Graphs ---")
-            if analysis_result['graphs']:
-                print(f"Generated {len(analysis_result['graphs'])} graph(s).")
-                # Instructions for viewing/saving the base64 plot remain the same
-                # e.g., save the base64 string to a file or display in Jupyter
-                # with open("debug_plot.png", "wb") as f:
-                #    f.write(base64.b64decode(analysis_result['graphs'][0]))
-                # print("Saved debug plot to debug_plot.png")
-            else:
-                print("No graphs generated (debug=False).")
-        else:
-            print("Analysis failed. Check image path and content.")
-
-    except ValueError as e:
-        print(f"Error initializing analyzer or reading file: {e}")
-    except FileNotFoundError:
-        print(f"Error: The file was not found at '{image_file_path}'. Please check the path.")
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")

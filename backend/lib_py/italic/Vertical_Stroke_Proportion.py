@@ -26,7 +26,7 @@ class VerticalStrokeAnalyzer:
             self.img = cv2.imread(image_input)
             if self.img is None:
                 raise ValueError(f"Error: Could not read image at {image_input}")
-        
+
         self.binary = None
         self.boxes = []
         self.metrics = {}
@@ -37,6 +37,11 @@ class VerticalStrokeAnalyzer:
         gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
         # Apply thresholding to get a binary image (inverted)
         _, self.binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+
+    def _preprocess_image_to_base64(self):
+        """Converts preprocessed image to base64."""
+        _, buffer = cv2.imencode('.png', self.binary)
+        return base64.b64encode(buffer).decode('utf-8')
 
     def _find_components(self):
         """Finds connected components (letters or parts of letters)."""
@@ -87,12 +92,13 @@ class VerticalStrokeAnalyzer:
         self._preprocess_image()
         self._find_components()
         self._compute_metrics()
-        
+
         result = {
             'metrics': self.metrics,
-            'graphs': []
+            'graphs': [],
+            'preprocessed_image': self._preprocess_image_to_base64()
         }
-        
+
         # Generate visualization plots if debug mode is enabled
         if debug and self.boxes:
             # Draw bounding boxes on the original image
@@ -119,16 +125,16 @@ class VerticalStrokeAnalyzer:
             plt.axis('off')
 
             plt.tight_layout()
-            
+
             # Convert plot to base64
             buf = BytesIO()
             plt.savefig(buf, format='png', bbox_inches='tight')
             buf.seek(0)
             plot_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
             plt.close()
-            
+
             result['graphs'].append(plot_base64)
-            
+
         return result
 
 
@@ -139,3 +145,4 @@ if __name__ == "__main__":
     analyzer = VerticalStrokeAnalyzer(image_path, is_base64=False)
     results = analyzer.analyze(debug=True)
     print(results['metrics'])
+    print(len(results['preprocessed_image']))

@@ -106,15 +106,21 @@ class PenPressureAnalyzer:
         plt.ylabel("Frequency")
 
         plt.tight_layout()
-        
+
         # Convert plot to base64
         buf = BytesIO()
         plt.savefig(buf, format='png', bbox_inches='tight')
         buf.seek(0)
         plot_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
         plt.close()
-        
+
         return plot_base64
+
+    def _generate_preprocessed_image_base64(self):
+        """Generates and returns base64 encoded preprocessed image."""
+        _, buffer = cv2.imencode('.png', self.binary)
+        preprocessed_image_base64 = base64.b64encode(buffer).decode('utf-8')
+        return preprocessed_image_base64
 
     def analyze(self, debug=False):
         """
@@ -127,16 +133,17 @@ class PenPressureAnalyzer:
             dict: Dictionary containing metrics and optional visualization graphs.
         """
         self._process_image()
-        
+
         result = {
             'metrics': self.results,
-            'graphs': []
+            'graphs': [],
+            'preprocessed_image': self._generate_preprocessed_image_base64()
         }
-        
+
         if debug:
             plot_base64 = self._generate_visualization()
             result['graphs'].append(plot_base64)
-            
+
         return result
 
 

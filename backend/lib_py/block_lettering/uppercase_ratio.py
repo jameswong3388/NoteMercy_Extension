@@ -62,7 +62,7 @@ class UppercaseRatioAnalyzer:
                 'median_height_ratio': 0,
                 'median_extent': 0
             }
-            return {'metrics': metrics, 'graphs': []}
+            return {'metrics': metrics, 'graphs': [], 'preprocessed_image': None}
 
         # Filter out noise by area: keep components larger than 10% of the median area
         areas = [prop.area for prop in props]
@@ -75,7 +75,7 @@ class UppercaseRatioAnalyzer:
                 'median_height_ratio': 0,
                 'median_extent': 0
             }
-            return {'metrics': metrics, 'graphs': []}
+            return {'metrics': metrics, 'graphs': [], 'preprocessed_image': None}
 
         # Extract bounding box heights
         heights = [prop.bbox[2] - prop.bbox[0] for prop in filtered_props]
@@ -104,7 +104,8 @@ class UppercaseRatioAnalyzer:
 
         result = {
             'metrics': metrics,
-            'graphs': []
+            'graphs': [],
+            'preprocessed_image': None
         }
 
         if debug:
@@ -147,15 +148,20 @@ class UppercaseRatioAnalyzer:
             axs[1, 1].set_ylabel('Frequency')
 
             plt.tight_layout(rect=[0, 0, 1, 0.95])
-            
+
             # Convert plot to base64
             buf = BytesIO()
             plt.savefig(buf, format='png', bbox_inches='tight')
             buf.seek(0)
             plot_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
             plt.close()
-            
+
             result['graphs'].append(plot_base64)
+
+            # binary image to base64
+            _, binary_encoded = cv2.imencode('.png', self.binary)
+            binary_base64 = base64.b64encode(binary_encoded).decode('utf-8')
+            result['preprocessed_image'] = binary_base64
 
         return result
 

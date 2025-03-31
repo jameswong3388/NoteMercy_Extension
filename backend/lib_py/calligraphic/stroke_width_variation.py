@@ -251,20 +251,25 @@ class StrokeWidthAnalyzer:
             # Step 2: Calculate Metrics
             metrics = self._calculate_stroke_widths()
 
-            result = {'metrics': metrics, 'graphs': []}
-
             # Step 3: Generate Visualization if requested and possible
+            result = {'metrics': metrics, 'graphs': []}
             if debug:
                 if self.skeleton is not None and self.binary_image is not None:
                     result['graphs'] = self._generate_visualization(metrics)
                 elif 'error' not in metrics:
                     print("Warning: Skipping visualization due to missing intermediate data (skeleton/binary image).")
 
+            #Preprocess Image to base64
+            _, buffer = cv2.imencode('.png', self.binary_image.astype(np.uint8)*255)
+            preprocessed_image_base64 = base64.b64encode(buffer).decode('utf-8')
+            result['preprocessed_image'] = preprocessed_image_base64
+
         except Exception as e:
             print(f"An error occurred during the analysis pipeline: {e}")
             result = {
                 'metrics': {k: 0.0 for k in ['mean_width', 'width_std', 'width_ratio', 'variation_coefficient']},
-                'graphs': []
+                'graphs': [],
+                'preprocessed_image': ''
             }
 
         return result
@@ -294,3 +299,5 @@ if __name__ == '__main__':
         img_data = base64.b64decode(results['graphs'][0])
         img = Image.open(io.BytesIO(img_data))
         img.show()
+    print("\nPreprocessed Image Base64:")
+    print(results['preprocessed_image'])

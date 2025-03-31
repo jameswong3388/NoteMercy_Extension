@@ -256,7 +256,7 @@ class StrokeConnectivityAnalyzer:
             dict: Contains 'metrics' (numerical values only) and optionally 'graphs'
                   (if debug=True).
         """
-        result = {'metrics': {}, 'graphs': []}
+        result = {'metrics': {}, 'graphs': [], 'preprocessed_image': None}
         default_metrics = self._compute_metrics(None, None)
 
         try:
@@ -393,10 +393,19 @@ class StrokeConnectivityAnalyzer:
                     plt.show()
                     plt.close(fig)
 
+            try:
+                _, buffer = cv2.imencode('.png', binary_img)
+                preprocessed_image_base64 = base64.b64encode(buffer).decode('utf-8')
+                result['preprocessed_image'] = preprocessed_image_base64
+            except Exception as preprocess_encode_err:
+                print(f"Warning: Failed to encode preprocessed image: {preprocess_encode_err}")
+                result['preprocessed_image'] = None
+
         except Exception as e:
             print(f"Error during analysis execution: {e}")
             result['metrics'] = default_metrics
             result['graphs'] = []
+            result['preprocessed_image'] = None
 
         if 'metrics' not in result or not result['metrics']:
             result['metrics'] = default_metrics
@@ -428,9 +437,11 @@ if __name__ == "__main__":
             print(f"Average Component Area (pixels): {metrics.get('average_component_area', 0):.1f}")
             print(f"Median Component Area (pixels): {metrics.get('median_component_area', 0):.1f}")
             print(f"Component Area Std Dev: {metrics.get('component_area_std_dev', 0):.1f}")
+            print(f"Preprocessed Image: {results.get('preprocessed_image')[:50] if results.get('preprocessed_image') else None}...")
         else:
             print("Analysis completed, but no word/ink detected (bounding box area is 0).")
             print(f"Metrics: {metrics}")
+            print(f"Preprocessed Image: {results.get('preprocessed_image')[:50] if results.get('preprocessed_image') else None}...")
     except (ValueError, FileNotFoundError) as e:
         print("\n--- Analysis Failed (Setup Error) ---")
         print(f"Error: {e}")

@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import base64
 from io import BytesIO
 
+
 class EnclosedLoopAnalyzer:
     def __init__(self, image_input, is_base64=True):
         """
@@ -27,9 +28,9 @@ class EnclosedLoopAnalyzer:
                 raise ValueError(f"Error: Could not read image at {image_input}")
 
         self.original = self.img.copy()  # Original grayscale image
-        self.binary = None    # Binarized image
-        self.words = []       # List of tuples (word_img, (x, y, w, h))
-        self.results = {}     # Dictionary to hold the computed metrics
+        self.binary = None  # Binarized image
+        self.words = []  # List of tuples (word_img, (x, y, w, h))
+        self.results = {}  # Dictionary to hold the computed metrics
 
     def preprocess_image(self):
         """
@@ -186,8 +187,14 @@ class EnclosedLoopAnalyzer:
 
         result = {
             'metrics': self.results,
-            'graphs': []
+            'graphs': [],
+            'preprocessed_image': ''
         }
+
+        # Convert preprocessed image to base64
+        _, preprocessed_img_encoded = cv2.imencode('.png', self.binary)
+        preprocessed_img_base64 = base64.b64encode(preprocessed_img_encoded).decode('utf-8')
+        result['preprocessed_image'] = preprocessed_img_base64
 
         if debug:
             # Convert original image to BGR for drawing bounding boxes
@@ -234,14 +241,14 @@ class EnclosedLoopAnalyzer:
                 plt.title('Loopiness Metrics')
 
             plt.tight_layout()
-            
+
             # Convert plot to base64
             buf = BytesIO()
             plt.savefig(buf, format='png', bbox_inches='tight')
             buf.seek(0)
             plot_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
             plt.close()
-            
+
             result['graphs'].append(plot_base64)
 
         return result

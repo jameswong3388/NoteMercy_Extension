@@ -256,9 +256,9 @@ class LoopDetectionAnalyzer:
         except Exception as e:
             print(f"Error during analysis steps: {e}")
             # Return empty/default results on error
-            return {'metrics': self._calculate_loop_statistics(), 'graphs': []} # Ensure metrics dict structure exists
+            return {'metrics': self._calculate_loop_statistics(), 'graphs': [], 'preprocessed_image': None} # Ensure metrics dict structure exists
 
-        result = {'metrics': metrics, 'graphs': []}
+        result = {'metrics': metrics, 'graphs': [], 'preprocessed_image': None}
 
         if debug:
             # Generate visualization only if metrics seem valid
@@ -271,6 +271,11 @@ class LoopDetectionAnalyzer:
             else:
                 print("Warning: Skipping visualization due to missing or invalid metrics.")
                 result['graphs'] = []
+
+            # Add the preprocessed image as base64
+            if self.binary_image is not None:
+                _, buffer = cv2.imencode('.png', self.binary_image)
+                result['preprocessed_image'] = base64.b64encode(buffer).decode('utf-8')
 
         return result
 
@@ -299,3 +304,9 @@ if __name__ == "__main__":
         img_data = base64.b64decode(results['graphs'][0])
         img = Image.open(io.BytesIO(img_data))
         img.show()
+    # Display the preprocessed image
+    if results['preprocessed_image']:
+        print("\nDisplaying preprocessed image...")
+        preprocessed_img_data = base64.b64decode(results['preprocessed_image'])
+        preprocessed_img = Image.open(io.BytesIO(preprocessed_img_data))
+        preprocessed_img.show()

@@ -104,8 +104,8 @@ class StrokeContinuityAnalyzer:
         # 5. Feature Point Detection (Endpoints and Branch points)
         # Kernel for neighbor counting (excludes center pixel)
         kernel = np.array([[1, 1, 1],
-                          [1, 0, 1],
-                          [1, 1, 1]])
+                           [1, 0, 1],
+                           [1, 1, 1]])
         # Convolve on the boolean skeleton converted to uint8
         neighbor_count = convolve(skel.astype(np.uint8), kernel, mode='constant', cval=0)
 
@@ -179,7 +179,6 @@ class StrokeContinuityAnalyzer:
             # Clear the last subplot if not used
             ax[5].axis('off')
 
-
             plt.tight_layout()
 
             # Convert plot to base64
@@ -191,33 +190,10 @@ class StrokeContinuityAnalyzer:
 
             result['graphs'].append(plot_base64)
 
+            # Preprocessed image base64 conversion
+            _, preprocessed_image_buffer = cv2.imencode('.png', binary.astype(np.uint8) * 255)
+            preprocessed_image_base64 = base64.b64encode(preprocessed_image_buffer).decode('utf-8')
+
+            result['preprocessed_image'] = preprocessed_image_base64
+
         return result
-
-
-# === Example Usage ===
-if __name__ == '__main__':
-    # Replace with the actual path to your image
-    # Use a clear image of a single handwritten word for best results initially
-    try:
-        # image_path = '/Users/jameswong/PycharmProjects/NoteMercy_Extension/backend/atest/1.png' # Use your path
-        image_path = '../../atest/shorthand2.png'  # <--- CHANGE THIS PATH
-        print(f"Analyzing image: {image_path}")
-        analyzer = StrokeContinuityAnalyzer(image_path, is_base64=False)
-        results = analyzer.analyze(debug=True)
-        print("\nMetrics:")
-        for key, value in results['metrics'].items():
-            print(f"  {key}: {value}")
-
-        if results['graphs']:
-            print(f"\nGenerated {len(results['graphs'])} debug graph(s).")
-            # To save the debug graph (optional):
-            # with open("debug_plot.png", "wb") as f:
-            #     f.write(base64.b64decode(results['graphs'][0]))
-            # print("Debug graph saved as debug_plot.png")
-
-    except ValueError as e:
-        print(e)
-    except FileNotFoundError:
-        print(f"Error: Input image file not found at '{image_path}'. Please check the path.")
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")

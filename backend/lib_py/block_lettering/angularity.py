@@ -273,7 +273,8 @@ class AngularityAnalyzer:
 
         result = {
             'metrics': metrics,
-            'graphs': []
+            'graphs': [],
+            'preprocessed_image': ''
         }
 
         # --- 4. Generate Visualization (Optional) ---
@@ -283,6 +284,8 @@ class AngularityAnalyzer:
                 approx_epsilon_factor=approx_epsilon_factor,
                 metrics=metrics
             )
+            _, encoded_image = cv2.imencode('.png', self.binary_image)
+            result['preprocessed_image'] = base64.b64encode(encoded_image).decode('utf-8')
 
         # --- 5. Return Results ---
         return result
@@ -311,4 +314,8 @@ if __name__ == "__main__":
         img_data = base64.b64decode(results['graphs'][0])
         img = Image.open(io.BytesIO(img_data))
         img.show()  # This will open the image in your default image viewer
-
+    if results['preprocessed_image']:
+        print("\nDisplaying preprocessed image...")
+        preprocessed_img_data = base64.b64decode(results['preprocessed_image'])
+        preprocessed_img = Image.open(io.BytesIO(preprocessed_img_data))
+        preprocessed_img.show()

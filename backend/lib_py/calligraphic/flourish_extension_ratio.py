@@ -6,6 +6,7 @@ from skimage.measure import label, regionprops
 import base64
 from io import BytesIO
 
+
 class FlourishAnalyzer:
     def __init__(self, image_input, is_base64=True):
         """
@@ -82,7 +83,7 @@ class FlourishAnalyzer:
         # Calculate contour complexity using perimeter-to-area ratio
         total_perimeter = sum(r.perimeter for r in props)
         total_area = sum(r.area for r in props)
-        complexity_ratio = (total_perimeter**2 / total_area) if total_area > 0 else 0
+        complexity_ratio = (total_perimeter ** 2 / total_area) if total_area > 0 else 0
 
         # Calculate vertical distribution metrics
         vertical_proj = np.sum(self.binary, axis=1)  # Sum along columns
@@ -175,15 +176,27 @@ class FlourishAnalyzer:
         plt.title('Metrics')
 
         plt.tight_layout()
-        
+
         # Convert plot to base64
         buf = BytesIO()
         plt.savefig(buf, format='png', bbox_inches='tight')
         buf.seek(0)
         plot_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
         plt.close()
-        
+
         return plot_base64
+
+    def _preprocess_image(self):
+        # Convert BGR to RGB if needed
+        if len(self.img.shape) == 3 and self.img.shape[2] == 3:
+            img_rgb = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)
+        else:
+            img_rgb = self.img
+
+        # Convert image to base64
+        _, buffer = cv2.imencode('.png', img_rgb)
+        preprocessed_image = base64.b64encode(buffer).decode('utf-8')
+        return preprocessed_image
 
     def analyze(self, debug=False):
         """
@@ -197,10 +210,11 @@ class FlourishAnalyzer:
             dict: Contains metrics and optional visualization graphs in base64 format
         """
         metrics, vertical_proj, main_box, total_box = self._compute_metrics()
-        
+
         result = {
             'metrics': metrics,
-            'graphs': []
+            'graphs': [],
+            'preprocessed_image': self._preprocess_image()
         }
 
         if debug and vertical_proj is not None:
@@ -208,6 +222,7 @@ class FlourishAnalyzer:
             result['graphs'].append(plot_base64)
 
         return result
+
 
 # === Example Usage ===
 if __name__ == "__main__":
