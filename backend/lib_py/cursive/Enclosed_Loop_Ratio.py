@@ -249,7 +249,7 @@ class EnclosedLoopAnalyzer:
 
 if __name__ == "__main__":
     # Example with file path
-    image_path = "atest/5.png"
+    image_path = "../../atest/cursive2.jpg"
     analyzer = EnclosedLoopAnalyzer(image_path, is_base64=False)
     results = analyzer.analyze(debug=True)
-    print(results)
+    print(results['metrics'])

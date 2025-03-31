@@ -258,44 +258,40 @@ async def analyze_image(request: ImageRequest):
         cursive_consistency_metrics = consistency_results.get('metrics', {})
 
         # --- Curvature Continuity Score ---
-        # Use average normalized segment length: Smoother cursive -> longer segments.
         cursive_avg_norm_segment_length = cursive_curvature_metrics.get('avg_normalized_segment_length', 0.0)
-        # Threshold for avg segment length (fraction of image height) for max score. Tunable.
         CURSIVE_SEGMENT_LENGTH_THRESHOLD_FOR_MAX_SCORE = 0.05
-        cursive_curvature_feature_score = 0.0  # Default
-
+        cursive_curvature_feature_score = 0.0
         if CURSIVE_SEGMENT_LENGTH_THRESHOLD_FOR_MAX_SCORE > 0:
-            # Linearly scale score from 0 up to the threshold.
             cursive_curvature_feature_score = min(1.0, max(0.0,
                                                            cursive_avg_norm_segment_length / CURSIVE_SEGMENT_LENGTH_THRESHOLD_FOR_MAX_SCORE))
         else:
             cursive_curvature_feature_score = 1.0 if cursive_avg_norm_segment_length > 0 else 0.0
 
-        # --- Stroke Connectivity Score ---
-        # Lower 'average_components_per_word' means MORE connected (more cursive).
-        cursive_avg_components_per_word = cursive_connectivity_metrics.get('average_components_per_word', None)
-        cursive_word_count = cursive_connectivity_metrics.get('word_count', 0)
-        cursive_connectivity_feature_score = 0.0  # Default
-        # Thresholds:
-        CURSIVE_CONNECTIVITY_MIN_COMPONENTS_FOR_MAX_SCORE = 1.5  # Below this, score is 1 (highly connected)
-        CURSIVE_CONNECTIVITY_MAX_COMPONENTS_FOR_MIN_SCORE = 8.0  # At or above this, score is 0 (very print-like)
-
-        if cursive_word_count > 0 and cursive_avg_components_per_word is not None:
-            if cursive_avg_components_per_word <= CURSIVE_CONNECTIVITY_MIN_COMPONENTS_FOR_MAX_SCORE:
+        # --- Stroke Connectivity Score (Using NEW Analyzer Metrics) ---
+        cursive_total_components = cursive_connectivity_metrics.get('total_components', None)
+        cursive_bbox_area = cursive_connectivity_metrics.get('bounding_box_area', 0)
+        cursive_connectivity_feature_score = 0.0
+        CURSIVE_CONNECTIVITY_MAX_COMPONENTS_FOR_MAX_SCORE = 3
+        CURSIVE_CONNECTIVITY_MIN_COMPONENTS_FOR_MIN_SCORE = 15
+        # Check for total_components < 2 to exclude print/shorthand
+        if cursive_bbox_area > 0 and cursive_total_components is not None and cursive_total_components <=3:
+            if cursive_total_components <= CURSIVE_CONNECTIVITY_MAX_COMPONENTS_FOR_MAX_SCORE:
                 cursive_connectivity_feature_score = 1.0
-            elif cursive_avg_components_per_word >= CURSIVE_CONNECTIVITY_MAX_COMPONENTS_FOR_MIN_SCORE:
+            elif cursive_total_components >= CURSIVE_CONNECTIVITY_MIN_COMPONENTS_FOR_MIN_SCORE:
                 cursive_connectivity_feature_score = 0.0
             else:
-                # Linear interpolation: score decreases as avg_comps_per_word increases
-                cursive_connectivity_feature_score = (
-                                                             CURSIVE_CONNECTIVITY_MAX_COMPONENTS_FOR_MIN_SCORE - cursive_avg_components_per_word) / \
-                                                     (
-                                                             CURSIVE_CONNECTIVITY_MAX_COMPONENTS_FOR_MIN_SCORE - CURSIVE_CONNECTIVITY_MIN_COMPONENTS_FOR_MAX_SCORE)
-                cursive_connectivity_feature_score = min(1.0, max(0.0, cursive_connectivity_feature_score))  # Clamp
+                denominator = (
+                            CURSIVE_CONNECTIVITY_MIN_COMPONENTS_FOR_MIN_SCORE - CURSIVE_CONNECTIVITY_MAX_COMPONENTS_FOR_MAX_SCORE)
+                if denominator > 0:
+                    cursive_connectivity_feature_score = (
+                                                                     CURSIVE_CONNECTIVITY_MIN_COMPONENTS_FOR_MIN_SCORE - cursive_total_components) / denominator
+                    cursive_connectivity_feature_score = min(1.0, max(0.0, cursive_connectivity_feature_score))
+                else:
+                    cursive_connectivity_feature_score = 0.0
 
         # --- Enclosed Loop Ratio Score ---
         # Higher ratio indicates more cursive features (like 'e', 'l', 'o').
-        cursive_enclosed_loop_ratio = cursive_loop_metrics.get('enclosed_loop_ratio', 0.0)
+        cursive_enclosed_loop_ratio = cursive_loop_metrics.get('avg_word_loopiness', 0.0)
         # Direct mapping, potentially scaled if needed, but 0-1 ratio works well.
         cursive_loop_feature_score = min(1.0, max(0.0, cursive_enclosed_loop_ratio))
 
@@ -312,10 +308,17 @@ async def analyze_image(request: ImageRequest):
         W_CURSIVE_CONSISTENCY = 0.9
         total_cursive_weight = W_CURSIVE_CURVATURE + W_CURSIVE_CONNECTIVITY + W_CURSIVE_LOOP + W_CURSIVE_CONSISTENCY
 
-        cursive_style_score = (W_CURSIVE_CURVATURE * cursive_curvature_feature_score +
-                               W_CURSIVE_CONNECTIVITY * cursive_connectivity_feature_score +
-                               W_CURSIVE_LOOP * cursive_loop_feature_score +
-                               W_CURSIVE_CONSISTENCY * cursive_consistency_feature_score) / total_cursive_weight
+        # Ensure total weight is positive to avoid division by zero
+        if total_cursive_weight > 0 and cursive_total_components is not None and cursive_total_components <=3:
+            cursive_style_score = (W_CURSIVE_CURVATURE * cursive_curvature_feature_score +
+                                   W_CURSIVE_CONNECTIVITY * cursive_connectivity_feature_score +
+                                   W_CURSIVE_LOOP * cursive_loop_feature_score +
+                                   W_CURSIVE_CONSISTENCY * cursive_consistency_feature_score) / total_cursive_weight
+        else:
+            cursive_style_score = 0.0
+
+        # Clamp final score
+        cursive_style_score = max(0.0, min(1.0, cursive_style_score))
 
 
         # =====================================================

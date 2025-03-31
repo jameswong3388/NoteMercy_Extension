@@ -1,498 +1,440 @@
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
 import base64
+import os
+import traceback
 from io import BytesIO
 
+import cv2
+import matplotlib.pyplot as plt
+import numpy as np
+
+
 class StrokeConnectivityAnalyzer:
+    """
+    Analyzes stroke connectivity characteristics of an image assumed to
+    contain a single word, returning only numerical metrics.
+    """
     def __init__(self, image_input, is_base64=True):
         """
-        Initializes the StrokeConnectivityAnalyzerRevised.
+        Initializes the StrokeConnectivityAnalyzer.
 
         Args:
             image_input (str): Base64 encoded image string or image file path.
             is_base64 (bool): True if image_input is base64, False if file path.
+
+        Raises:
+            ValueError: If the image cannot be loaded, decoded, or is not grayscale/color.
+            FileNotFoundError: If the image file path is invalid (and is_base64=False).
         """
-        if is_base64:
-            try:
+        self.img = None
+        self.gray_img = None
+        self.input_type = "base64" if is_base64 else "filepath"
+        self.avg_stroke_height = 10
+
+        try:
+            if is_base64:
+                if not isinstance(image_input, str):
+                    raise ValueError("Base64 input must be a string.")
+                # Pad base64 string if needed
+                missing_padding = len(image_input) % 4
+                if missing_padding:
+                    image_input += '=' * (4 - missing_padding)
                 img_data = base64.b64decode(image_input)
                 nparr = np.frombuffer(img_data, np.uint8)
                 self.img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
                 if self.img is None:
-                    raise ValueError("Error: Could not decode base64 image")
-            except Exception as e:
-                raise ValueError(f"Error processing base64 image: {e}")
-        else:
-            self.img = cv2.imread(image_input)
-            if self.img is None:
-                raise ValueError(f"Error: Could not read image at {image_input}")
+                    raise ValueError("Could not decode base64 image string.")
+            else:
+                if not isinstance(image_input, str):
+                    raise ValueError("File path input must be a string.")
+                if not os.path.exists(image_input):
+                    raise FileNotFoundError(f"Image file not found at {image_input}")
+                self.img = cv2.imread(image_input)
+                if self.img is None:
+                    raise ValueError(
+                        f"Could not read or decode image file at {image_input} (possibly corrupt or unsupported format)")
 
-        if len(self.img.shape) == 3 and self.img.shape[2] == 3:
-            self.gray_img = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
-        elif len(self.img.shape) == 2:
-            self.gray_img = self.img.copy()
-        else:
-             raise ValueError("Unsupported image format (must be color or grayscale)")
+            # Convert to grayscale
+            if len(self.img.shape) == 3 and self.img.shape[2] == 3:
+                self.gray_img = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
+            elif len(self.img.shape) == 2:
+                self.gray_img = self.img.copy()
+            else:
+                raise ValueError(f"Unsupported image format/shape: {self.img.shape}")
 
-        # Estimate average stroke height for filtering (can be refined)
-        self.avg_stroke_height = self._estimate_stroke_height()
+            if self.gray_img is None or self.gray_img.size == 0:
+                raise ValueError("Grayscale conversion resulted in an empty image.")
+
+            self.avg_stroke_height = self._estimate_stroke_height()
+
+        except FileNotFoundError as e:
+            print(f"Error: {e}")
+            raise e
+        except Exception as e:
+            print(f"Error during initialization: {e}")
+            raise ValueError(f"Failed to initialize analyzer: {e}")
 
     def _estimate_stroke_height(self):
-        # Basic estimation - can be improved with more robust methods
-        # Threshold and find contours to get an idea of typical heights
-        _, thresh = cv2.threshold(self.gray_img, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        heights = [cv2.boundingRect(c)[3] for c in contours if cv2.contourArea(c) > 5] # Ignore tiny contours
-        if not heights:
-            return 10 # Default fallback
-        # Use median height, more robust to outliers than mean
-        median_h = np.median(heights)
-        # Clip to a reasonable range
-        return max(5, min(median_h, 50)) # Assume stroke height is typically between 5 and 50 pixels
+        """
+        Estimates the average stroke height from the grayscale image using contour analysis
+        on an inverted Otsu thresholded image.
+        """
+        if self.gray_img is None or self.gray_img.size == 0:
+            return 10
 
+        try:
+            _, thresh = cv2.threshold(
+                self.gray_img, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU
+            )
+        except cv2.error as e:
+            print(f"Warning: Otsu thresholding failed ({e}). Using simple threshold.")
+            _, thresh = cv2.threshold(self.gray_img, 127, 255, cv2.THRESH_BINARY_INV)
+
+        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        heights = []
+        min_area_for_height = 5
+        for c in contours:
+            area = cv2.contourArea(c)
+            if area > min_area_for_height:
+                try:
+                    _, _, _, h = cv2.boundingRect(c)
+                    if 1 < h < self.gray_img.shape[0] * 0.8:
+                        heights.append(h)
+                except cv2.error:
+                    continue
+
+        if not heights:
+            return 10
+
+        median_h = np.median(heights)
+        estimated_height = max(5.0, min(median_h, 70.0))
+        return estimated_height
 
     def _preprocess_image(self, adaptive_block_size=15, adaptive_c=5):
         """
-        Preprocesses the grayscale image for analysis.
+        Preprocesses the grayscale image for analysis. Applies blur and adaptive thresholding.
 
         Args:
-            adaptive_block_size (int): Block size for adaptive thresholding (must be odd).
+            adaptive_block_size (int): Block size for adaptive thresholding (must be odd and > 1).
             adaptive_c (int): Constant subtracted from the mean in adaptive thresholding.
 
         Returns:
-            numpy.ndarray: The preprocessed binary image (text is white).
+            tuple: (binary image, bounding box tuple (x, y, w, h)) or (binary image, None) if no ink.
         """
-        # 1. Apply Gaussian blur - moderate blur
-        blurred = cv2.GaussianBlur(self.gray_img, (3, 3), 0)
+        if self.gray_img is None:
+            print("Error: Grayscale image is not available for preprocessing.")
+            return None, None
 
-        # 2. Apply adaptive thresholding - parameters might need tuning per dataset
-        # Using a slightly larger block size might help with uneven illumination
-        # The constant C controls how much lighter than the neighbourhood pixels need to be
-        binary = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                     cv2.THRESH_BINARY_INV, adaptive_block_size, adaptive_c)
+        try:
+            blurred = cv2.GaussianBlur(self.gray_img, (3, 3), 0)
+            if adaptive_block_size % 2 == 0 or adaptive_block_size <= 1:
+                adaptive_block_size = 15
 
-        # 3. Optional: Morphological Opening to remove small noise/dots
-        # Kernel size should be smaller than the details you want to keep (like i-dots)
-        # Using a 2x2 kernel might remove very small noise without damaging larger structures
-        # kernel = np.ones((2, 2), np.uint8)
-        # binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel)
-
-        # DO NOT USE CLOSING here as it artificially merges components.
-
-        return binary
-
-    def _segment_lines(self, binary_img):
-        """
-        Segments the binary image into horizontal text lines.
-        Basic horizontal projection method.
-
-        Args:
-            binary_img (numpy.ndarray): Binarized image (text=white).
-
-        Returns:
-            list: A list of tuples [(line_start_y, line_end_y), ...].
-        """
-        if binary_img is None or binary_img.size == 0:
-            return []
-
-        # Horizontal projection profile
-        h_proj = np.sum(binary_img, axis=1)
-
-        # Basic thresholding to find text regions - may need tuning
-        # Use Otsu on the projection profile itself or a percentile?
-        proj_thresh = np.mean(h_proj[h_proj > 0]) * 0.1 if np.any(h_proj > 0) else 0 # Threshold based on non-zero rows mean
-
-        lines = []
-        in_line = False
-        line_start = 0
-        min_line_height = max(5, int(self.avg_stroke_height * 0.5)) # Minimum height based on estimated stroke
-
-        for i, proj_val in enumerate(h_proj):
-            is_above_thresh = proj_val > proj_thresh
-            if not in_line and is_above_thresh:
-                in_line = True
-                line_start = i
-            elif in_line and not is_above_thresh:
-                in_line = False
-                line_end = i
-                # Check minimum line height before adding
-                if (line_end - line_start) >= min_line_height:
-                    lines.append((line_start, line_end))
-            # Handle case where line goes to the bottom edge
-            if in_line and i == len(h_proj) - 1:
-                 line_end = i + 1
-                 if (line_end - line_start) >= min_line_height:
-                     lines.append((line_start, line_end))
-
-        return lines
-
-
-    def _segment_words(self, binary_img, lines, gap_threshold_factor=1.0):
-        """
-        Segments lines into words based on horizontal gaps between connected components.
-
-        Args:
-            binary_img (numpy.ndarray): Binarized image (text=white).
-            lines (list): List of (y_start, y_end) tuples for each line.
-            gap_threshold_factor (float): Multiplier for average component width to determine word gap.
-
-        Returns:
-            list: A list of tuples [(word_img, (x, y, w, h)), ...].
-        """
-        words = []
-        min_component_area = max(5, int( (self.avg_stroke_height / 4)**2 )) # Min area relative to stroke height squared
-
-        for line_start, line_end in lines:
-            if line_end <= line_start: continue
-            line_img = binary_img[line_start:line_end, :]
-            if line_img.size == 0: continue
-
-            # Find connected components within the line image
-            num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(
-                line_img, connectivity=8 # Use 8-connectivity
+            binary = cv2.adaptiveThreshold(
+                blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                cv2.THRESH_BINARY_INV, adaptive_block_size, adaptive_c
             )
 
-            # Filter out background label (0) and tiny components
-            valid_components = []
-            component_widths = []
-            for i in range(1, num_labels): # Start from 1 to ignore background
-                area = stats[i, cv2.CC_STAT_AREA]
-                if area >= min_component_area:
-                    # Store index, x-coordinate, width
-                    valid_components.append({'id': i, 'x': stats[i, cv2.CC_STAT_LEFT], 'width': stats[i, cv2.CC_STAT_WIDTH]})
-                    component_widths.append(stats[i, cv2.CC_STAT_WIDTH])
+            contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            if not contours:
+                return binary, None
 
-            if not valid_components: continue
-
-            # Sort components by x-coordinate
-            sorted_components = sorted(valid_components, key=lambda c: c['x'])
-
-            # Estimate word gap threshold based on average component width within the line
-            avg_comp_width = np.mean(component_widths) if component_widths else self.avg_stroke_height # Fallback
-            word_gap_threshold = avg_comp_width * gap_threshold_factor
-
-            # Group components into words
-            word_groups = []
-            current_group = [sorted_components[0]['id']]
-
-            for i in range(1, len(sorted_components)):
-                curr_comp = sorted_components[i]
-                prev_comp = sorted_components[i - 1]
-
-                # Calculate gap between the end of previous component and start of current
-                gap = curr_comp['x'] - (prev_comp['x'] + prev_comp['width'])
-
-                if gap < word_gap_threshold:
-                    # Components are close, belong to the same word
-                    current_group.append(curr_comp['id'])
-                else:
-                    # Gap is large, start a new word
-                    if current_group:
-                        word_groups.append(current_group)
-                    current_group = [curr_comp['id']]
-
-            # Add the last group
-            if current_group:
-                word_groups.append(current_group)
-
-            # Extract word images and bounding boxes
-            min_word_width = int(self.avg_stroke_height * 1.5) # Word should be wider than ~1.5 chars
-            min_word_height = int(self.avg_stroke_height * 0.8) # Word should have min height
-
-            for group in word_groups:
-                # Create a mask for the current word group
-                word_mask = np.isin(labels, group).astype(np.uint8) * 255
-
-                # Find bounding box of the word using the mask
-                contours, _ = cv2.findContours(word_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                if not contours: continue
-
-                # Combine bounding boxes of all contours in the group
-                x_coords = []
-                y_coords = []
-                for cnt in contours:
+            x_coords, y_coords = [], []
+            for cnt in contours:
+                if cv2.contourArea(cnt) > 2:
                     x, y, w, h = cv2.boundingRect(cnt)
                     x_coords.extend([x, x + w])
                     y_coords.extend([y, y + h])
 
-                if not x_coords or not y_coords: continue
+            if not x_coords or not y_coords:
+                return binary, None
 
-                x_min, x_max = min(x_coords), max(x_coords)
-                y_min, y_max = min(y_coords), max(y_coords)
-                word_w = x_max - x_min
-                word_h = y_max - y_min
+            x_min, x_max = min(x_coords), max(x_coords)
+            y_min, y_max = min(y_coords), max(y_coords)
+            word_w = max(1, x_max - x_min)
+            word_h = max(1, y_max - y_min)
+            word_bbox = (x_min, y_min, word_w, word_h)
+            return binary, word_bbox
 
-                # Filter based on word dimensions relative to stroke height
-                if word_w >= min_word_width and word_h >= min_word_height:
-                    # Extract the word image from the original binary line image
-                    word_img_crop = line_img[y_min:y_max, x_min:x_max]
+        except cv2.error as e:
+            print(f"OpenCV Error during preprocessing: {e}")
+            return None, None
+        except Exception as e:
+            print(f"Unexpected Error during preprocessing: {e}")
+            return None, None
 
-                    # Store the actual word image (cropped) and its global coordinates
-                    global_y_min = y_min + line_start
-                    bbox = (x_min, global_y_min, word_w, word_h)
-                    words.append((word_img_crop, bbox))
-
-        return words
-
-
-    def _compute_metrics(self, words):
+    def _compute_metrics(self, binary_word_img, word_bbox):
         """
-        Computes stroke connectivity metrics from the segmented words.
-        Focuses on robust metrics not reliant on character count estimation.
+        Computes stroke connectivity metrics from the binarized single word image.
 
         Args:
-            words (list): List of tuples [(word_img, (x, y, w, h)), ...].
+            binary_word_img (numpy.ndarray): Binarized image (text=white).
+            word_bbox (tuple): The (x, y, w, h) bounding box of the word ink.
 
         Returns:
-            dict: Dictionary of computed metrics.
+            dict: Dictionary of computed numerical metrics.
         """
-        if not words:
-            return {
-                "average_components_per_word": 0,
-                "average_component_density": 0, # Components per pixel area
-                "word_count": 0,
-                "status": "No words detected"
-            }
-
-        component_counts_per_word = []
-        component_densities = []
-        total_components = 0
-        min_component_area = max(5, int((self.avg_stroke_height / 4)**2)) # Consistent filtering
-
-        for word_img, bbox in words:
-            if word_img is None or word_img.size == 0:
-                continue
-
-            # Find connected components within the isolated word image
-            # Ensure image is binary
-            _, word_binary = cv2.threshold(word_img, 127, 255, cv2.THRESH_BINARY)
-
-            num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(
-                word_binary, connectivity=8
-            )
-
-            # Count valid components (ignore background and tiny specks)
-            valid_components_count = 0
-            for i in range(1, num_labels):
-                if stats[i, cv2.CC_STAT_AREA] >= min_component_area:
-                    valid_components_count += 1
-
-             # Avoid division by zero if no valid components found (should be rare for valid words)
-            if valid_components_count == 0:
-                 valid_components_count = 1 # Assume at least one component if word was detected
-
-            component_counts_per_word.append(valid_components_count)
-            total_components += valid_components_count
-
-            # Calculate component density
-            word_area = bbox[2] * bbox[3] # w * h
-            if word_area > 0:
-                density = valid_components_count / word_area
-                component_densities.append(density)
-            else:
-                 component_densities.append(0)
-
-
-        avg_components = np.mean(component_counts_per_word) if component_counts_per_word else 0
-        avg_density = np.mean(component_densities) if component_densities else 0
-
-        return {
-            "average_components_per_word": avg_components,
-            "average_component_density": avg_density * 1000, # Scale for readability (e.g., comps per 1000 pixels)
-            "word_count": len(words),
-            "total_components_found": total_components,
-            "status": "Success"
+        default_metrics = {
+            "total_components": 0,
+            "total_ink_pixels": 0,
+            "bounding_box_area": 0,
+            "ink_density": 0.0,
+            "component_density": 0.0,
+            "average_component_area": 0.0,
+            "median_component_area": 0.0,
+            "component_area_std_dev": 0.0
         }
 
-    def analyze(self, debug=False, adaptive_block_size=15, adaptive_c=5, gap_threshold_factor=1.0):
+        if binary_word_img is None or binary_word_img.size == 0 or word_bbox is None:
+            return default_metrics
+
+        x, y, w, h = word_bbox
+        if w <= 0 or h <= 0:
+            return default_metrics
+
+        try:
+            word_img_cropped = binary_word_img[y:y + h, x:x + w]
+            if word_img_cropped.size == 0:
+                return default_metrics
+
+            num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(
+                word_img_cropped, connectivity=8
+            )
+            min_component_area = max(3, int((self.avg_stroke_height * 0.4) ** 2))
+
+            valid_components_count = 0
+            total_component_pixel_area = 0
+            component_areas = []
+
+            for i in range(1, num_labels):
+                area = stats[i, cv2.CC_STAT_AREA]
+                if area >= min_component_area:
+                    valid_components_count += 1
+                    total_component_pixel_area += area
+                    component_areas.append(area)
+
+            if valid_components_count == 0:
+                metrics = default_metrics.copy()
+                metrics["bounding_box_area"] = w * h
+                return metrics
+
+            bounding_box_area = w * h
+            actual_ink_pixels = total_component_pixel_area
+            ink_density = actual_ink_pixels / bounding_box_area if bounding_box_area > 0 else 0.0
+            component_density = (valid_components_count / bounding_box_area) * 1000 if bounding_box_area > 0 else 0.0
+            average_component_area = np.mean(component_areas) if component_areas else 0.0
+            median_component_area = np.median(component_areas) if component_areas else 0.0
+            component_area_std_dev = np.std(component_areas) if component_areas else 0.0
+
+            return {
+                "total_components": valid_components_count,
+                "total_ink_pixels": actual_ink_pixels,
+                "bounding_box_area": bounding_box_area,
+                "ink_density": ink_density,
+                "component_density": component_density,
+                "average_component_area": average_component_area,
+                "median_component_area": median_component_area,
+                "component_area_std_dev": component_area_std_dev
+            }
+
+        except cv2.error as e:
+            print(f"OpenCV Error during metric computation: {e}")
+            return default_metrics
+        except Exception as e:
+            print(f"Unexpected Error during metric computation: {e}")
+            return default_metrics
+
+    def analyze(self, debug=False, adaptive_block_size=15, adaptive_c=5):
         """
-        Analyzes the image to determine stroke connectivity characteristics.
+        Analyzes the single word image for stroke connectivity.
 
         Args:
-            debug (bool): If True, generates visualization plots.
-            adaptive_block_size (int): Parameter for preprocessing.
-            adaptive_c (int): Parameter for preprocessing.
-            gap_threshold_factor (float): Parameter for word segmentation.
+            debug (bool): If True, generates and returns visualization plots.
+            adaptive_block_size (int): Parameter for adaptive thresholding.
+            adaptive_c (int): Parameter for adaptive thresholding.
 
         Returns:
-            dict: Contains 'metrics' and 'graphs' (if debug=True).
-                  Metrics focus on `average_components_per_word`.
+            dict: Contains 'metrics' (numerical values only) and optionally 'graphs'
+                  (if debug=True).
         """
+        result = {'metrics': {}, 'graphs': []}
+        default_metrics = self._compute_metrics(None, None)
+
         try:
-            # Preprocess the image
-            binary = self._preprocess_image(adaptive_block_size, adaptive_c)
+            binary_img, word_bbox = self._preprocess_image(adaptive_block_size, adaptive_c)
+            if binary_img is None or word_bbox is None:
+                result['metrics'] = default_metrics
+                return result
 
-            # Segment into lines and words
-            lines = self._segment_lines(binary)
-            if not lines:
-                 print("Warning: No text lines detected.")
-                 metrics = self._compute_metrics([]) # Return default empty metrics
-                 return {'metrics': metrics, 'graphs': []}
+            metrics = self._compute_metrics(binary_img, word_bbox)
+            result['metrics'] = metrics
 
-            words = self._segment_words(binary, lines, gap_threshold_factor)
-            if not words:
-                 print("Warning: No words detected.")
-                 metrics = self._compute_metrics([]) # Return default empty metrics
-                 return {'metrics': metrics, 'graphs': []}
+            analysis_successful = metrics.get("total_components", 0) > 0 or metrics.get("bounding_box_area", 0) > 0
 
-            # Compute metrics
-            metrics = self._compute_metrics(words)
-
-            result = {'metrics': metrics, 'graphs': []}
-
-            # --- Debug Visualization ---
             if debug:
-                # Ensure img is RGB for plotting
-                if len(self.img.shape) == 2:
-                    img_rgb = cv2.cvtColor(self.img, cv2.COLOR_GRAY2RGB)
+                try:
+                    if len(self.img.shape) == 2:
+                        img_rgb = cv2.cvtColor(self.img, cv2.COLOR_GRAY2RGB)
+                    elif len(self.img.shape) == 3 and self.img.shape[2] == 3:
+                        img_rgb = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)
+                    elif len(self.img.shape) == 3 and self.img.shape[2] == 4:
+                        img_rgb = cv2.cvtColor(self.img, cv2.COLOR_BGRA2RGB)
+                    else:
+                        raise ValueError("Cannot convert original image to RGB for plotting")
+                except Exception as plot_img_err:
+                    print(f"Warning: Could not prepare original image for plotting: {plot_img_err}")
+                    img_rgb = np.zeros((100, 100, 3), dtype=np.uint8)
+
+                try:
+                    plt.style.use('seaborn-v0_8-darkgrid')
+                except Exception:
+                    pass
+
+                fig = plt.figure("Single Word Connectivity Analysis", figsize=(10, 8))
+
+                # Plot 1: Original Image with Bounding Box
+                ax1 = plt.subplot(2, 2, 1)
+                ax1.imshow(img_rgb)
+                ax1.set_title("Original Image & BBox")
+                ax1.axis('off')
+                if word_bbox:
+                    x, y, w, h = word_bbox
+                    rect = plt.Rectangle((x, y), w, h, fill=False, edgecolor='lime', linewidth=1)
+                    ax1.add_patch(rect)
+
+                # Plot 2: Binarized Image (Cropped)
+                ax2 = plt.subplot(2, 2, 2)
+                if word_bbox:
+                    x, y, w, h = word_bbox
+                    binary_cropped = binary_img[y:y + h, x:x + w]
+                    if binary_cropped.size > 0:
+                        ax2.imshow(binary_cropped, cmap='gray')
+                        ax2.set_title("Binarized Word (Cropped)")
+                    else:
+                        ax2.text(0.5, 0.5, "Empty Crop", horizontalalignment='center', verticalalignment='center')
+                        ax2.set_title("Binarized Word (Crop Failed)")
                 else:
-                    img_rgb = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)
+                    ax2.imshow(binary_img, cmap='gray')
+                    ax2.set_title("Binarized Image (No BBox)")
+                ax2.axis('off')
 
-                plt.figure("Stroke Connectivity Analysis (Revised)", figsize=(12, 10))
-
-                # 1: Original Image
-                plt.subplot(2, 2, 1)
-                plt.imshow(img_rgb)
-                plt.title("Original Image")
-                plt.axis('off')
-
-                # 2: Binarized Image
-                plt.subplot(2, 2, 2)
-                plt.imshow(binary, cmap='gray')
-                plt.title(f"Binarized (Block:{adaptive_block_size}, C:{adaptive_c})")
-                plt.axis('off')
-
-                # 3: Detected Words
-                plt.subplot(2, 2, 3)
-                vis_img_words = img_rgb.copy()
-                # Draw lines first (optional)
-                # for y_start, y_end in lines:
-                #    cv2.rectangle(vis_img_words, (0, y_start), (vis_img_words.shape[1]-1, y_end), (255, 0, 0), 1) # Blue lines
-                # Draw words
-                for _, (x, y, w, h) in words:
-                    cv2.rectangle(vis_img_words, (x, y), (x + w, y + h), (0, 255, 0), 2) # Green words
-                plt.imshow(vis_img_words)
-                plt.title(f"Detected Words ({len(words)})")
-                plt.axis('off')
-
-                # 4: Key Metrics Visualization
-                plt.subplot(2, 2, 4)
-                if metrics['word_count'] > 0:
-                    metric_names = ['Avg Comps/Word', 'Avg Comp Density\n(per 1k px)']
-                    metric_values = [metrics['average_components_per_word'], metrics['average_component_density']]
-                    bars = plt.bar(metric_names, metric_values)
-                    plt.bar_label(bars, fmt='{:.2f}')
-                    plt.title('Key Connectivity Metrics')
-                    plt.ylabel('Value')
-                    # Add suggested thresholds visually? (more complex)
-                    # plt.axhline(y=SUGGESTED_CURSIVE_THRESHOLD, color='r', linestyle='--', label=f'Cursive thr: {SUGGESTED_CURSIVE_THRESHOLD}')
-                    # plt.legend()
+                # Plot 3: Components Visualization
+                ax3 = plt.subplot(2, 2, 3)
+                if analysis_successful and word_bbox:
+                    try:
+                        x, y, w, h = word_bbox
+                        binary_cropped = binary_img[y:y + h, x:x + w]
+                        if binary_cropped.size > 0:
+                            num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(
+                                binary_cropped, connectivity=8
+                            )
+                            min_comp_area = max(3, int((self.avg_stroke_height * 0.4) ** 2))
+                            labeled_img_bgr = np.zeros((binary_cropped.shape[0], binary_cropped.shape[1], 3),
+                                                       dtype=np.uint8)
+                            valid_component_count = 0
+                            for i in range(1, num_labels):
+                                if stats[i, cv2.CC_STAT_AREA] >= min_comp_area:
+                                    valid_component_count += 1
+                                    color = (np.random.randint(50, 256),
+                                             np.random.randint(50, 256),
+                                             np.random.randint(50, 256))
+                                    labeled_img_bgr[labels == i] = color
+                            labeled_img_rgb = cv2.cvtColor(labeled_img_bgr, cv2.COLOR_BGR2RGB)
+                            ax3.imshow(labeled_img_rgb)
+                            ax3.set_title(f"Filtered Components ({valid_component_count})")
+                        else:
+                            raise ValueError("Cropped binary image for component plot is empty.")
+                    except Exception as comp_plot_err:
+                        print(f"Warning: Could not generate component plot: {comp_plot_err}")
+                        ax3.text(0.5, 0.5, "Plot Error", horizontalalignment='center', verticalalignment='center')
+                        ax3.set_title("Filtered Components")
                 else:
-                    plt.text(0.5, 0.5, "No words detected\nto compute metrics", horizontalalignment='center', verticalalignment='center')
-                    plt.title('Key Connectivity Metrics')
+                    ax3.text(0.5, 0.5, "N/A" if word_bbox else "No BBox", horizontalalignment='center',
+                             verticalalignment='center')
+                    ax3.set_title("Filtered Components")
+                ax3.axis('off')
 
+                # Plot 4: Key Metrics Bar Chart
+                ax4 = plt.subplot(2, 2, 4)
+                if analysis_successful:
+                    metric_names = ['Total\nComps', 'Comp Density\n(per 1k px)', 'Avg Comp\nArea (px)',
+                                    'Median Comp\nArea (px)']
+                    metric_values = [
+                        metrics.get('total_components', 0),
+                        metrics.get('component_density', 0),
+                        metrics.get('average_component_area', 0),
+                        metrics.get('median_component_area', 0)
+                    ]
+                    colors = ['skyblue', 'lightcoral', 'lightgreen', 'gold']
+                    bars = ax4.bar(metric_names, metric_values, color=colors[:len(metric_values)])
+                    ax4.bar_label(bars, fmt='{:.1f}', padding=3, fontsize=8)
+                    ax4.set_title('Key Connectivity Metrics')
+                    ax4.tick_params(axis='x', labelsize=8, rotation=10)
+                    ax4.set_ylabel('Value', fontsize=9)
+                    ax4.set_ylim(bottom=0)
+                else:
+                    reason = "No Components Found" if word_bbox else "Preprocessing Failed"
+                    ax4.text(0.5, 0.5, f"Metrics N/A\n({reason})", horizontalalignment='center',
+                             verticalalignment='center', fontsize=10)
+                    ax4.set_title('Key Connectivity Metrics')
+                ax4.set_xticks(range(len(metric_names)))
+                ax4.set_xticklabels(metric_names)
+                ax4.tick_params(axis='y', labelsize=8)
 
-                plt.tight_layout()
-
-                # Save plot to base64
-                buf = BytesIO()
-                plt.savefig(buf, format='png', bbox_inches='tight')
-                buf.seek(0)
-                plot_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
-                # plt.show() # Optional: display interactively
-                plt.close()
-
-                result['graphs'].append(plot_base64)
+                plt.tight_layout(rect=[0, 0.03, 1, 0.97])
+                try:
+                    buf = BytesIO()
+                    plt.savefig(buf, format='png', bbox_inches='tight', dpi=100)
+                    buf.seek(0)
+                    plot_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+                    result['graphs'].append(plot_base64)
+                except Exception as save_plot_err:
+                    print(f"Warning: Failed to save plot to base64: {save_plot_err}")
+                finally:
+                    plt.show()
+                    plt.close(fig)
 
         except Exception as e:
-            print(f"Error during analysis: {e}")
-            import traceback
-            traceback.print_exc()
-            result = {
-                'metrics': {
-                    "average_components_per_word": 0, "average_component_density": 0,
-                    "word_count": 0, "status": f"Error: {e}"
-                 },
-                'graphs': []
-            }
+            print(f"Error during analysis execution: {e}")
+            result['metrics'] = default_metrics
+            result['graphs'] = []
+
+        if 'metrics' not in result or not result['metrics']:
+            result['metrics'] = default_metrics
 
         return result
 
-# --- Threshold Suggestion Function ---
-def classify_connectivity(metrics, cursive_threshold=3.5, print_threshold=6.0):
-    """
-    Classifies handwriting style based on connectivity metrics.
 
-    Args:
-        metrics (dict): The output metrics from the analyzer.
-        cursive_threshold (float): Max avg_components_per_word to be considered cursive.
-        print_threshold (float): Min avg_components_per_word to be considered print.
-
-    Returns:
-        str: Classification ("Cursive", "Print", "Mixed/Unknown").
-    """
-    if metrics.get('status') != 'Success' or metrics['word_count'] == 0:
-        return "Error/No Text"
-
-    avg_comps = metrics['average_components_per_word']
-
-    if avg_comps <= cursive_threshold:
-        return "Cursive"
-    elif avg_comps >= print_threshold:
-        return "Print"
-    else:
-        # Values between the thresholds are ambiguous
-        return "Mixed/Unknown"
-
-
-# === Example usage ===
 if __name__ == "__main__":
-    # Example with file path - REPLACE WITH YOUR IMAGE PATH
-    # image_path_cursive = '/path/to/your/cursive_example.png'
-    # image_path_print = '/path/to/your/print_example.png'
-    image_path = '../../atest/italic.jpg' # Use the path from user example
+    image_path = '../../atest/1.png'
+    ADAPTIVE_BLOCK_SIZE = 19  # Must be odd.
+    ADAPTIVE_C = 6
+    DEBUG_MODE = True
 
-    print(f"Analyzing image: {image_path}")
+    print(f"\nAnalyzing single word image: {image_path}")
+    print(f"Parameters: BlockSize={ADAPTIVE_BLOCK_SIZE}, C={ADAPTIVE_C}")
+    print("-" * 30)
+
     try:
-        # You might need to tune these parameters based on your specific images
         analyzer = StrokeConnectivityAnalyzer(image_path, is_base64=False)
-        results = analyzer.analyze(
-            debug=True,
-            adaptive_block_size=19, # Larger block size can sometimes help with variable lighting
-            adaptive_c=7,           # Adjust C based on stroke thickness/contrast
-            gap_threshold_factor=0.8 # Adjust based on typical spacing in your samples
-        )
-
-        print("\n--- Analysis Results (Revised) ---")
-        if 'metrics' in results:
-            metrics = results['metrics']
-            print(f"Status: {metrics.get('status', 'N/A')}")
-            print(f"Word Count: {metrics.get('word_count', 0)}")
-            if metrics.get('word_count', 0) > 0:
-                 print(f"Average Components per Word: {metrics.get('average_components_per_word', 0):.2f}")
-                 print(f"Average Component Density (per 1k px): {metrics.get('average_component_density', 0):.2f}")
-                 print(f"Total Components Found: {metrics.get('total_components_found', 0)}")
-
-                 # --- Classification Example ---
-                 # **These thresholds are STARTING POINTS and likely need tuning based on testing with your data**
-                 suggested_cursive_threshold = 3.5
-                 suggested_print_threshold = 6.0
-                 classification = classify_connectivity(metrics, suggested_cursive_threshold, suggested_print_threshold)
-                 print(f"\n--- Suggested Classification ---")
-                 print(f"Based on avg_comps/word (Cursive <= {suggested_cursive_threshold}, Print >= {suggested_print_threshold}): {classification}")
-
+        results = analyzer.analyze(debug=DEBUG_MODE, adaptive_block_size=ADAPTIVE_BLOCK_SIZE, adaptive_c=ADAPTIVE_C)
+        print("--- Analysis Results ---")
+        metrics = results.get('metrics', {})
+        if metrics.get('bounding_box_area', 0) > 0:
+            print(f"Total Components Found: {metrics.get('total_components', 0)}")
+            print(f"Bounding Box Area (pixels): {metrics.get('bounding_box_area', 0)}")
+            print(f"Total Ink Pixels (filtered): {metrics.get('total_ink_pixels', 0)}")
+            print(f"Ink Density (ink/bbox): {metrics.get('ink_density', 0):.3f}")
+            print(f"Component Density (comps/1k px): {metrics.get('component_density', 0):.2f}")
+            print(f"Average Component Area (pixels): {metrics.get('average_component_area', 0):.1f}")
+            print(f"Median Component Area (pixels): {metrics.get('median_component_area', 0):.1f}")
+            print(f"Component Area Std Dev: {metrics.get('component_area_std_dev', 0):.1f}")
         else:
-            print("Analysis did not return metrics.")
-
-        # Access graph data if needed:
-        # if results.get('graphs'):
-        #     print("\nDebug graph generated.") # results['graphs'][0] contains the base64 string
-
-    except ValueError as e:
-        print(f"Initialization Error: {e}")
-    except FileNotFoundError:
-        print(f"Error: Image file not found at {image_path}")
+            print("Analysis completed, but no word/ink detected (bounding box area is 0).")
+            print(f"Metrics: {metrics}")
+    except (ValueError, FileNotFoundError) as e:
+        print("\n--- Analysis Failed (Setup Error) ---")
+        print(f"Error: {e}")
     except Exception as e:
+        print("\n--- Analysis Failed (Unexpected Error) ---")
         print(f"An unexpected error occurred: {e}")
-        import traceback
         traceback.print_exc()
