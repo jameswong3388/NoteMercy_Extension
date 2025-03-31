@@ -160,7 +160,9 @@ class AspectRatioAnalyzer:
         # print(f"Found {len(self.letter_bboxes)} candidates after filtering {count_initial} initial contours.")
 
     def _calculate_aspect_ratios(self):
-        """ Calculates aspect ratio for the found letter candidates. """
+        """
+        Calculates aspect ratio for the found letter candidates.
+        """
         if not self.letter_bboxes:
             # print("No valid letter candidates found to calculate aspect ratios.")
             self.all_aspect_ratios = []
@@ -171,7 +173,9 @@ class AspectRatioAnalyzer:
         # print(f"Calculated {len(self.all_aspect_ratios)} aspect ratios.")
 
     def _calculate_statistics(self):
-        """ Calculates summary statistics for the aspect ratios. """
+        """
+        Calculates summary statistics for the aspect ratios.
+        """
         num_ratios = len(self.all_aspect_ratios)
         num_letters_found = len(self.letter_bboxes)  # Final count after filtering
 

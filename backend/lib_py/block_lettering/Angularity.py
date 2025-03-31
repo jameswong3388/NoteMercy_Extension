@@ -293,7 +293,7 @@ class AngularityAnalyzer:
 # === Example usage (remains the same) ===
 if __name__ == "__main__":
     # --- Configuration ---
-    image_path = r"C:\Users\Samson\Desktop\Coding\IPPR\NoteMercy_Extension\backend\atest\print2.png"  # Replace
+    image_path = r"C:\Users\Samson\Desktop\Coding\IPPR\NoteMercy_Extension\backend\atest\print.jpg"  # Replace
     analyzer = AngularityAnalyzer(image_path, is_base64=False)
     results = analyzer.analyze(debug=True)
 
