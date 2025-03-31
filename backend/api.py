@@ -527,7 +527,7 @@ async def analyze_image(request: ImageRequest):
         shorthand_num_components = shorthand_stroke_continuity_metrics.get('num_components', 0)
         shorthand_stroke_continuity_feature_score = 0.0  # Default
 
-        if shorthand_num_components > 0:
+        if shorthand_num_components <= 1:
             # Ratio of endpoints per component. Lower ratio suggests more continuity (loops=0, lines=2).
             shorthand_endpoint_ratio = shorthand_num_endpoints / shorthand_num_components
             # Threshold for the ratio. Ratios above this are considered discontinuous. Tunable.
@@ -552,9 +552,12 @@ async def analyze_image(request: ImageRequest):
         W_SHORTHAND_DENSITY = 1.2  # Density is important for shorthand efficiency
         total_shorthand_weight = W_SHORTHAND_SMOOTHNESS + W_SHORTHAND_CONTINUITY + W_SHORTHAND_DENSITY
 
-        shorthand_style_score = (W_SHORTHAND_SMOOTHNESS * shorthand_curve_smoothness_feature_score +
-                                 W_SHORTHAND_CONTINUITY * shorthand_stroke_continuity_feature_score +
-                                 W_SHORTHAND_DENSITY * shorthand_symbol_density_feature_score) / total_shorthand_weight
+        if shorthand_num_components <= 1:
+            shorthand_style_score = (W_SHORTHAND_SMOOTHNESS * shorthand_curve_smoothness_feature_score +
+                                     W_SHORTHAND_CONTINUITY * shorthand_stroke_continuity_feature_score +
+                                     W_SHORTHAND_DENSITY * shorthand_symbol_density_feature_score) / total_shorthand_weight
+        else:
+            shorthand_style_score = 0.0
 
         # =====================================================
         # === FINAL RESPONSE ASSEMBLY ===
