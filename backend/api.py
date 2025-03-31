@@ -257,7 +257,7 @@ async def analyze_image(request: ImageRequest):
         cursive_connectivity_metrics = connectivity_results.get('metrics', {})
         cursive_consistency_metrics = consistency_results.get('metrics', {})
 
-        # --- Curvature/Smoothness Score ---
+        # --- Curvature Continuity Score ---
         # Use average normalized segment length: Smoother cursive -> longer segments.
         cursive_avg_norm_segment_length = cursive_curvature_metrics.get('avg_normalized_segment_length', 0.0)
         # Threshold for avg segment length (fraction of image height) for max score. Tunable.
@@ -327,14 +327,36 @@ async def analyze_image(request: ImageRequest):
         italic_vertical_stroke_metrics = vertical_stroke_results.get('metrics', {})
 
         # --- Letter Spacing Uniformity Score ---
-        # Uniform spacing can contribute to a neat italic appearance.
-        italic_spacing_is_uniform = italic_spacing_metrics.get('is_uniform')
-        if italic_spacing_is_uniform is None:
-            # Not enough gaps to determine; assign a neutral score or low confidence?
-            italic_spacing_feature_score = 0.5  # Neutral score
+        # Updated Logic: Italic script generally consists of separate letters,
+        # so the presence of multiple gaps is expected and desirable.
+        # Uniformity of these gaps further contributes to a positive score.
+        # Lack of gaps (like cursive) should result in a low score.
+        italic_spacing_is_uniform = italic_spacing_metrics.get('is_uniform')  # True, False, or None
+        italic_spacing_gap_count = italic_spacing_metrics.get('gap_count', 0)
+
+        # Define minimum gaps required for a good italic separation score
+        MIN_GAPS_FOR_SEPARATION = 2  # Need at least two gaps to assess uniformity and separation
+
+        if italic_spacing_gap_count < MIN_GAPS_FOR_SEPARATION:
+            # Very few or no gaps suggest connected writing (not typical italic)
+            # Assign a low score, perhaps slightly higher for 1 gap than 0.
+            italic_spacing_feature_score = 0.1 if italic_spacing_gap_count == 1 else 0.0
         else:
-            # Assume uniform spacing is slightly more characteristic of careful italic
-            italic_spacing_feature_score = 1.0 if italic_spacing_is_uniform else 0.2  # Penalize non-uniform
+            # Sufficient gaps exist, suggesting letter separation typical of italic/print.
+            # Now, factor in uniformity.
+            if italic_spacing_is_uniform is True:
+                # Good separation AND uniform spacing - highest score
+                italic_spacing_feature_score = 1.0
+            elif italic_spacing_is_uniform is False:
+                # Good separation BUT non-uniform spacing - moderate score
+                italic_spacing_feature_score = 0.6  # Penalize non-uniformity, but still reward separation
+            else:
+                # Should technically not happen if gap_count >= MIN_GAPS_FOR_SEPARATION,
+                # but handle defensively. Uniformity couldn't be determined.
+                italic_spacing_feature_score = 0.5  # Neutral score for uniformity aspect
+
+        # Ensure score is clamped (should be redundant with logic above, but safe)
+        italic_spacing_feature_score = max(0.0, min(1.0, italic_spacing_feature_score))
 
         # --- Slant Angle Score ---
         # Significant, consistent slant is the defining feature of italic.
@@ -584,7 +606,7 @@ async def analyze_image(request: ImageRequest):
                 "cursive": {
                     "score": float(cursive_style_score),
                     "component_scores": {
-                        "curvature_smoothness": float(cursive_curvature_feature_score),
+                        "curvature_continuity": float(cursive_curvature_feature_score),
                         "stroke_connectivity": float(cursive_connectivity_feature_score),
                         "enclosed_loop_ratio": float(cursive_loop_feature_score),
                         "stroke_consistency": float(cursive_consistency_feature_score),
