@@ -167,7 +167,7 @@ export default function Home() {
             { name: "right_angle_corner_detection", data: features.analysis_details.calligraphic.right_angle_corner_detection }
         ],
         "Shorthand": [
-            { name: "smooth_curves", data: features.analysis_details.shorthand.curve_smoothness },
+            { name: "curve_smoothness", data: features.analysis_details.shorthand.curve_smoothness },
             { name: "stroke_terminal", data: features.analysis_details.shorthand.stroke_terminal },
             { name: "symbol_density", data: features.analysis_details.shorthand.symbol_density }
         ],

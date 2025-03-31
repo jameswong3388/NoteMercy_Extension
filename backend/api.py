@@ -578,7 +578,7 @@ async def analyze_image(request: ImageRequest):
                 },
                 "shorthand": {
                     # Removed: "stroke_continuity": convert_numpy_types(shorthand_continuity_results),
-                    "smooth_curves": convert_numpy_types(smooth_curves_results),
+                    "curve_smoothness": convert_numpy_types(smooth_curves_results),
                     "stroke_terminal": convert_numpy_types(stroke_terminal_results),
                     "symbol_density": convert_numpy_types(symbol_density_results),
                 }
