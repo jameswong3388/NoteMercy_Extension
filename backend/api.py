@@ -20,6 +20,7 @@ from lib_py.italic.Vertical_Stroke_Proportion import VerticalStrokeAnalyzer
 from lib_py.print.discrete_letter import DiscreteLetterAnalyzer
 from lib_py.print.letter_size_uniformity import LetterUniformityAnalyzer
 from lib_py.print.vertical_alignment_consistency import VerticalAlignmentAnalyzer
+from lib_py.shared.stroke_terminal import StrokeTerminalAnalyzer
 from lib_py.shorthand.smooth_curves import StrokeSmoothnessAnalyzer
 from lib_py.shorthand.stroke_continuity import StrokeContinuityAnalyzer
 from lib_py.shorthand.symbol_density import SymbolDensityAnalyzer
@@ -119,6 +120,13 @@ async def analyze_image(request: ImageRequest):
         smooth_curves_results = smooth_curves_analyzer.analyze(debug=True)
         symbol_density_results = symbol_density_analyzer.analyze(debug=True)
 
+        # ======================================
+        # === SHARED FEATURE STROKE TERMINAL ===
+        # ======================================
+        stroke_terminal_analyzer = StrokeTerminalAnalyzer(request.image, is_base64=True)
+        stroke_terminal_analyzer_results = stroke_terminal_analyzer.analyze(debug=True)
+
+        shared_terminal_count = stroke_terminal_analyzer_results.get('terminal_count', 0)
 
         # =====================================================
         # === SCORE CALCULATION FOR BLOCK LETTERING STYLE ===
@@ -180,10 +188,12 @@ async def analyze_image(request: ImageRequest):
         W_BLOCK_LOOP = 1.0
         total_block_weight = W_BLOCK_ANGULARITY + W_BLOCK_ASPECT_RATIO + W_BLOCK_LOOP
 
-        block_lettering_style_score = (W_BLOCK_ANGULARITY * block_angularity_feature_score +
-                                       W_BLOCK_ASPECT_RATIO * block_aspect_ratio_consistency_score +
-                                       W_BLOCK_LOOP * block_loop_feature_score) / total_block_weight
-
+        if shared_terminal_count > 2:
+            block_lettering_style_score = (W_BLOCK_ANGULARITY * block_angularity_feature_score +
+                                           W_BLOCK_ASPECT_RATIO * block_aspect_ratio_consistency_score +
+                                           W_BLOCK_LOOP * block_loop_feature_score) / total_block_weight
+        else:
+            block_lettering_style_score = 0.0
 
         # =====================================================
         # === SCORE CALCULATION FOR CALLIGRAPHIC HANDWRITING STYLE ===
@@ -239,9 +249,12 @@ async def analyze_image(request: ImageRequest):
         W_CALLIGRAPHIC_WIDTH_VAR = 1.2  # More weight?
         total_calligraphic_weight = W_CALLIGRAPHIC_COVERAGE + W_CALLIGRAPHIC_RIGHT_ANGLE + W_CALLIGRAPHIC_WIDTH_VAR
 
-        calligraphic_style_score = (W_CALLIGRAPHIC_COVERAGE * calligraphic_coverage_feature_score +
-                                    W_CALLIGRAPHIC_RIGHT_ANGLE * calligraphic_right_angle_feature_score +
-                                    W_CALLIGRAPHIC_WIDTH_VAR * calligraphic_width_variation_score) / total_calligraphic_weight
+        if shared_terminal_count > 2:
+            calligraphic_style_score = (W_CALLIGRAPHIC_COVERAGE * calligraphic_coverage_feature_score +
+                                        W_CALLIGRAPHIC_RIGHT_ANGLE * calligraphic_right_angle_feature_score +
+                                        W_CALLIGRAPHIC_WIDTH_VAR * calligraphic_width_variation_score) / total_calligraphic_weight
+        else:
+            calligraphic_style_score = 0.0
 
 
         # =====================================================
@@ -305,7 +318,8 @@ async def analyze_image(request: ImageRequest):
         total_cursive_weight = W_CURSIVE_CURVATURE + W_CURSIVE_CONNECTIVITY + W_CURSIVE_LOOP + W_CURSIVE_CONSISTENCY
 
         # Ensure total weight is positive to avoid division by zero
-        if total_cursive_weight > 0 and cursive_total_components is not None and cursive_total_components <=3:
+        if total_cursive_weight > 0 and cursive_total_components is not None and cursive_total_components <= 3 and shared_terminal_count > 2:
+
             cursive_style_score = (W_CURSIVE_CURVATURE * cursive_curvature_feature_score +
                                    W_CURSIVE_CONNECTIVITY * cursive_connectivity_feature_score +
                                    W_CURSIVE_LOOP * cursive_loop_feature_score +
@@ -419,7 +433,7 @@ async def analyze_image(request: ImageRequest):
         W_ITALIC_VERTICAL = 1.0
         total_italic_weight = W_ITALIC_SPACING + W_ITALIC_SLANT + W_ITALIC_VERTICAL
 
-        if italic_spacing_gap_count > MIN_GAPS_FOR_SEPARATION:
+        if italic_spacing_gap_count > MIN_GAPS_FOR_SEPARATION and shared_terminal_count > 2:
             italic_style_score = (W_ITALIC_SPACING * italic_spacing_feature_score +
                                   W_ITALIC_SLANT * italic_slant_feature_score +
                                   W_ITALIC_VERTICAL * italic_vertical_proportion_score) / total_italic_weight
@@ -504,10 +518,12 @@ async def analyze_image(request: ImageRequest):
         W_PRINT_DISCRETE = 1.2  # Discreteness is key for print vs cursive
         total_print_weight = W_PRINT_ALIGNMENT + W_PRINT_SIZE_UNIFORMITY + W_PRINT_DISCRETE
 
-        print_style_score = (W_PRINT_ALIGNMENT * print_vertical_alignment_feature_score +
-                             W_PRINT_SIZE_UNIFORMITY * print_size_uniformity_feature_score +
-                             W_PRINT_DISCRETE * print_discrete_letter_feature_score) / total_print_weight
-
+        if shared_terminal_count > 2:
+            print_style_score = (W_PRINT_ALIGNMENT * print_vertical_alignment_feature_score +
+                                 W_PRINT_SIZE_UNIFORMITY * print_size_uniformity_feature_score +
+                                 W_PRINT_DISCRETE * print_discrete_letter_feature_score) / total_print_weight
+        else:
+            print_style_score = 0.0
 
         # =====================================================
         # === SCORE CALCULATION FOR SHORTHAND HANDWRITING STYLE ===
@@ -560,7 +576,7 @@ async def analyze_image(request: ImageRequest):
         W_SHORTHAND_DENSITY = 1.2  # Density is important for shorthand efficiency
         total_shorthand_weight = W_SHORTHAND_SMOOTHNESS + W_SHORTHAND_CONTINUITY + W_SHORTHAND_DENSITY
 
-        if shorthand_num_components <= 1:
+        if shorthand_num_components <= 1 and not shared_terminal_count > 2:
             shorthand_style_score = (W_SHORTHAND_SMOOTHNESS * shorthand_curve_smoothness_feature_score +
                                      W_SHORTHAND_CONTINUITY * shorthand_stroke_continuity_feature_score +
                                      W_SHORTHAND_DENSITY * shorthand_symbol_density_feature_score) / total_shorthand_weight

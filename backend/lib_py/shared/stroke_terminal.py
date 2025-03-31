@@ -58,15 +58,16 @@ class StrokeTerminalAnalyzer:
         self.terminal_features = []  # List of feature dicts for each terminal
         self.metrics = {}  # Aggregate metrics
 
-    def preprocess_image(self, blur_ksize=3, threshold_block_size=11, threshold_c=2):
+    def preprocess_image(self, blur_ksize=3, threshold_block_size=11, threshold_c=2, noise_reduction_kernel=3):
         """
-        Applies preprocessing: Grayscale, Blur, Adaptive Thresholding.
+        Applies preprocessing: Grayscale, Blur, Adaptive Thresholding, and noise reduction.
         Stores the binary result (white strokes=255, black background=0) in self.binary_image.
 
         Args:
             blur_ksize (int): Kernel size for Gaussian Blur (odd number > 1, or 0/1 to disable).
             threshold_block_size (int): Size of the neighborhood area for adaptive thresholding (odd number > 1).
             threshold_c (int): Constant subtracted from the mean in adaptive thresholding.
+            noise_reduction_kernel (int): Kernel size for noise reduction (odd number > 1, or 0/1 to disable).
         """
         if self.img_color is None:
             raise RuntimeError("Cannot preprocess, image not loaded correctly.")
@@ -94,9 +95,14 @@ class StrokeTerminalAnalyzer:
             cv2.THRESH_BINARY_INV, threshold_block_size, threshold_c
         )
 
+        # 4. Noise Reduction (Optional)
+        if noise_reduction_kernel > 1:
+            ksize = noise_reduction_kernel if noise_reduction_kernel % 2 != 0 else noise_reduction_kernel + 1
+            self.binary_image = cv2.medianBlur(self.binary_image, ksize)
+
         # Optional: Morphological Opening to remove small noise specks
         # You might adjust the kernel size depending on the noise level
-        kernel = np.ones((2, 2), np.uint8)
+        kernel = np.ones((5, 5), np.uint8)
         self.binary_image = cv2.morphologyEx(self.binary_image, cv2.MORPH_OPEN, kernel)
 
     def _find_stroke_endpoints(self):
@@ -294,7 +300,7 @@ class StrokeTerminalAnalyzer:
         Args:
             debug (bool): If True, generate and include visualization graphs.
             **kwargs: Parameters to pass to internal methods like preprocess_image
-                      (e.g., blur_ksize, threshold_block_size, threshold_c)
+                      (e.g., blur_ksize, threshold_block_size, threshold_c, noise_reduction_kernel)
                       and _analyze_terminals (e.g., roi_size).
 
         Returns:
@@ -308,7 +314,7 @@ class StrokeTerminalAnalyzer:
         try:
             # Pass preprocessing parameters if provided
             preproc_args = {k: v for k, v in kwargs.items() if
-                            k in ['blur_ksize', 'threshold_block_size', 'threshold_c']}
+                            k in ['blur_ksize', 'threshold_block_size', 'threshold_c', 'noise_reduction_kernel']}
             self.preprocess_image(**preproc_args)
 
             self._find_stroke_endpoints()
@@ -351,10 +357,9 @@ class StrokeTerminalAnalyzer:
 
         return result
 
-
 # === Example Usage ===
 if __name__ == "__main__":
-    image_path = "../../atest/calligraphic.png"
+    image_path = "../../atest/print3.png"
 
     analyzer = StrokeTerminalAnalyzer(image_path, is_base64=False)
 
@@ -365,8 +370,8 @@ if __name__ == "__main__":
         blur_ksize=0,  # Less blur might be better for sharp details
         threshold_block_size=15,  # Adjust based on stroke thickness/image size
         threshold_c=5,  # Adjust based on contrast
-        roi_size=21  # Adjust ROI size to capture terminal features
+        roi_size=21,  # Adjust ROI size to capture terminal features
+        noise_reduction_kernel=3 # add noise reduction
     )
 
     print(analysis_results['metrics'])
-    print(analysis_results['preprocessed_image'][:100]) # Print first 100 characters of base64 image
