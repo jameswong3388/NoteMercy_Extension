@@ -126,7 +126,7 @@ async def analyze_image(request: ImageRequest):
         stroke_terminal_analyzer = StrokeTerminalAnalyzer(request.image, is_base64=True)
         stroke_terminal_analyzer_results = stroke_terminal_analyzer.analyze(debug=True)
 
-        shared_terminal_count = stroke_terminal_analyzer_results.get('terminal_count', 0)
+        shared_terminal_count = stroke_terminal_analyzer_results["metrics"].get("terminal_count", 0)
 
         # =====================================================
         # === SCORE CALCULATION FOR BLOCK LETTERING STYLE ===
@@ -188,7 +188,7 @@ async def analyze_image(request: ImageRequest):
         W_BLOCK_LOOP = 1.0
         total_block_weight = W_BLOCK_ANGULARITY + W_BLOCK_ASPECT_RATIO + W_BLOCK_LOOP
 
-        if shared_terminal_count > 2:
+        if shared_terminal_count > 2.0:
             block_lettering_style_score = (W_BLOCK_ANGULARITY * block_angularity_feature_score +
                                            W_BLOCK_ASPECT_RATIO * block_aspect_ratio_consistency_score +
                                            W_BLOCK_LOOP * block_loop_feature_score) / total_block_weight
@@ -576,7 +576,7 @@ async def analyze_image(request: ImageRequest):
         W_SHORTHAND_DENSITY = 1.2  # Density is important for shorthand efficiency
         total_shorthand_weight = W_SHORTHAND_SMOOTHNESS + W_SHORTHAND_CONTINUITY + W_SHORTHAND_DENSITY
 
-        if shorthand_num_components <= 1 and not shared_terminal_count > 2:
+        if shorthand_num_components <= 1 and not shared_terminal_count <= 2:
             shorthand_style_score = (W_SHORTHAND_SMOOTHNESS * shorthand_curve_smoothness_feature_score +
                                      W_SHORTHAND_CONTINUITY * shorthand_stroke_continuity_feature_score +
                                      W_SHORTHAND_DENSITY * shorthand_symbol_density_feature_score) / total_shorthand_weight
@@ -618,10 +618,10 @@ async def analyze_image(request: ImageRequest):
                     "discrete_letter": convert_numpy_types(discrete_letter_results),
                 },
                 "shorthand": {
-                    # Use the correctly named variable here too
                     "stroke_continuity": convert_numpy_types(shorthand_continuity_results),
                     "smooth_curves": convert_numpy_types(smooth_curves_results),
                     "symbol_density": convert_numpy_types(symbol_density_results),
+                    "stroke_terminal": convert_numpy_types(stroke_terminal_analyzer_results)
                 }
             },
             # Include the calculated style scores
