@@ -53,8 +53,8 @@ interface HandwritingFeatures {
             right_angle_corner_detection: any;
         };
         shorthand: {
-            stroke_continuity: any;
-            smooth_curves: any;
+            curve_smoothness: any;
+            stroke_terminal: any;
             symbol_density: any;
         };
         print: {
@@ -167,8 +167,8 @@ export default function Home() {
             { name: "right_angle_corner_detection", data: features.analysis_details.calligraphic.right_angle_corner_detection }
         ],
         "Shorthand": [
-            { name: "stroke_continuity", data: features.analysis_details.shorthand.stroke_continuity },
-            { name: "smooth_curves", data: features.analysis_details.shorthand.smooth_curves },
+            { name: "smooth_curves", data: features.analysis_details.shorthand.curve_smoothness },
+            { name: "stroke_terminal", data: features.analysis_details.shorthand.stroke_terminal },
             { name: "symbol_density", data: features.analysis_details.shorthand.symbol_density }
         ],
         "Print": [

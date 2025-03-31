@@ -256,3 +256,31 @@ class RightAngleAnalyzer:
         result['preprocessed_image'] = preprocessed_image_base64
 
         return result
+
+# === Example Usage (remains the same) ===
+if __name__ == "__main__":
+    image_path = r"C:\Users\Samson\Desktop\Coding\IPPR\NoteMercy_Extension\backend\atest\calligraphic.png" # <<< CHANGE THIS
+    analyzer = RightAngleAnalyzer(image_path, is_base64=False)
+    results = analyzer.analyze(debug=True)
+
+    print("\n===== Right Angle Analysis Results =====")
+    metrics = results['metrics']
+    for key, value in metrics.items():
+        if isinstance(value, float):
+            print(f"{key}: {value:.4f}")
+        else:
+            print(f"{key}: {value}")
+
+    # Display the image directly without saving
+    if results['graphs']:
+        from PIL import Image
+        import io
+
+        print("\nDisplaying visualization...")
+        img_data = base64.b64decode(results['graphs'][0])
+        img = Image.open(io.BytesIO(img_data))
+        img.show()
+    print("\nDisplaying preprocessed_image...")
+    preprocessed_img_data = base64.b64decode(results['preprocessed_image'])
+    preprocessed_img = Image.open(io.BytesIO(preprocessed_img_data))
+    preprocessed_img.show()

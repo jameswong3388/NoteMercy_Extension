@@ -55,11 +55,11 @@ class ContinuousPartCoverageAnalyzer:
             processed = cv2.GaussianBlur(processed, (ksize, ksize), 0)
 
         # 3. Adaptive Thresholding
-        threshold = cv2.adaptiveThreshold(processed, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
+        self.binary_image = cv2.adaptiveThreshold(processed, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
 
-        # 4. Morphological Closing
-        kernel = np.ones((3, 3), np.uint8)
-        self.binary_image = cv2.morphologyEx(threshold, cv2.MORPH_CLOSE, kernel)
+        # # 4. Morphological Closing
+        # kernel = np.ones((3, 3), np.uint8)
+        # self.binary_image = cv2.morphologyEx(threshold, cv2.MORPH_CLOSE, kernel)
 
     def _calculate_coverage_ratio(self):
         """

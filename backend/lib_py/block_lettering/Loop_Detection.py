@@ -283,7 +283,6 @@ class LoopDetectionAnalyzer:
 if __name__ == "__main__":
     # --- Image Selection ---
     image_path = r"C:\Users\Samson\Desktop\Coding\IPPR\NoteMercy_Extension\backend\atest\calligraphic.png"
-
     analyzer = LoopDetectionAnalyzer(image_path, is_base64=False)
     results = analyzer.analyze(debug=True)
 
@@ -304,9 +303,3 @@ if __name__ == "__main__":
         img_data = base64.b64decode(results['graphs'][0])
         img = Image.open(io.BytesIO(img_data))
         img.show()
-    # Display the preprocessed image
-    if results['preprocessed_image']:
-        print("\nDisplaying preprocessed image...")
-        preprocessed_img_data = base64.b64decode(results['preprocessed_image'])
-        preprocessed_img = Image.open(io.BytesIO(preprocessed_img_data))
-        preprocessed_img.show()
