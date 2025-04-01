@@ -642,7 +642,7 @@ async def analyze_image(request: ImageRequest):
                     "cursive": {
                         "stroke_connectivity": {
                             "data": convert_numpy_types(connectivity_results),
-                            "is_dominant": False,
+                            "is_dominant": True,
                             "is_shared": False,
                             "weightage": W_CURSIVE_CONNECTIVITY
                         },
@@ -736,6 +736,14 @@ async def analyze_image(request: ImageRequest):
                             "loop_presence_inverse": float(block_loop_feature_score),
                         }
                     },
+                    "calligraphic": {
+                        "score": float(calligraphic_style_score),
+                        "component_scores": {
+                            "coverage": float(calligraphic_coverage_feature_score),
+                            "right_angle_inverse": float(calligraphic_right_angle_feature_score),
+                            "stroke_width_variation": float(calligraphic_width_variation_score),
+                        }
+                    },
                     "cursive": {
                         "score": float(cursive_style_score),
                         "component_scores": {
@@ -743,14 +751,6 @@ async def analyze_image(request: ImageRequest):
                             "stroke_connectivity": float(cursive_connectivity_feature_score),
                             "enclosed_loop_ratio": float(cursive_loop_feature_score),
                             "stroke_consistency": float(cursive_consistency_feature_score),
-                        }
-                    },
-                    "calligraphic": {
-                        "score": float(calligraphic_style_score),
-                        "component_scores": {
-                            "coverage": float(calligraphic_coverage_feature_score),
-                            "right_angle_inverse": float(calligraphic_right_angle_feature_score),
-                            "stroke_width_variation": float(calligraphic_width_variation_score),
                         }
                     },
                     "italic": {
@@ -761,6 +761,14 @@ async def analyze_image(request: ImageRequest):
                             "vertical_proportion": float(italic_vertical_proportion_score),
                         }
                     },
+                    "print": {
+                        "score": float(print_style_score),
+                        "component_scores": {
+                            "vertical_alignment": float(print_vertical_alignment_feature_score),
+                            "size_uniformity": float(print_size_uniformity_feature_score),
+                            "letter_discreteness": float(print_letter_discreteness_feature_score),
+                        }
+                    },
                     "shorthand": {
                         "score": float(shorthand_style_score),
                         "component_scores": {
@@ -768,14 +776,6 @@ async def analyze_image(request: ImageRequest):
                             # Removed: "stroke_continuity": float(shorthand_stroke_continuity_feature_score),
                             "stroke_terminal": float(shorthand_stroke_terminal_feature_score),
                             "symbol_density": float(shorthand_symbol_density_feature_score)
-                        }
-                    },
-                    "print": {
-                        "score": float(print_style_score),
-                        "component_scores": {
-                            "vertical_alignment": float(print_vertical_alignment_feature_score),
-                            "size_uniformity": float(print_size_uniformity_feature_score),
-                            "letter_discreteness": float(print_letter_discreteness_feature_score),
                         }
                     },
                 }

@@ -13,7 +13,7 @@ import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
 import {Button} from "@/components/ui/button";
 import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {toast} from "sonner";
-import { PhotoProvider, PhotoView } from "react-photo-view";
+import {PhotoProvider, PhotoView} from "react-photo-view";
 import "react-photo-view/dist/react-photo-view.css";
 
 interface HandwritingStyle {
@@ -175,10 +175,13 @@ export default function Home() {
             { name: "aspect_ratio", data: features.analysis_details.block_lettering.aspect_ratio },
             { name: "loop_detection", data: features.analysis_details.block_lettering.loop_detection }
         ],
-        "Italic": [
-            { name: "vertical_stroke_proportion", data: features.analysis_details.italic.vertical_stroke_proportion },
-            { name: "slant_angle", data: features.analysis_details.italic.slant_angle },
-            { name: "inter_letter_spacing", data: features.analysis_details.italic.inter_letter_spacing }
+        "Calligraphic": [
+            {name: "stroke_width_variation", data: features.analysis_details.calligraphic.stroke_width_variation},
+            {name: "continuous_part_coverage", data: features.analysis_details.calligraphic.continuous_part_coverage},
+            {
+                name: "right_angle_corner_detection",
+                data: features.analysis_details.calligraphic.right_angle_corner_detection
+            }
         ],
         "Cursive": [
             { name: "stroke_connectivity", data: features.analysis_details.cursive.stroke_connectivity },
@@ -186,21 +189,21 @@ export default function Home() {
             { name: "curvature_continuity", data: features.analysis_details.cursive.curvature_continuity },
             { name: "stroke_consistency", data: features.analysis_details.cursive.stroke_consistency }
         ],
-        "Calligraphic": [
-            { name: "stroke_width_variation", data: features.analysis_details.calligraphic.stroke_width_variation },
-            { name: "continuous_part_coverage", data: features.analysis_details.calligraphic.continuous_part_coverage },
-            { name: "right_angle_corner_detection", data: features.analysis_details.calligraphic.right_angle_corner_detection }
-        ],
-        "Shorthand": [
-            { name: "curve_smoothness", data: features.analysis_details.shorthand.curve_smoothness },
-            { name: "stroke_terminal", data: features.analysis_details.shorthand.stroke_terminal },
-            { name: "symbol_density", data: features.analysis_details.shorthand.symbol_density }
+        "Italic": [
+            {name: "vertical_stroke_proportion", data: features.analysis_details.italic.vertical_stroke_proportion},
+            {name: "slant_angle", data: features.analysis_details.italic.slant_angle},
+            {name: "inter_letter_spacing", data: features.analysis_details.italic.inter_letter_spacing}
         ],
         "Print": [
             { name: "vertical_alignment", data: features.analysis_details.print.vertical_alignment },
             { name: "letter_size_uniformity", data: features.analysis_details.print.letter_size_uniformity },
             { name: "discrete_letter", data: features.analysis_details.print.discrete_letter }
-        ]
+        ],
+        "Shorthand": [
+            {name: "curve_smoothness", data: features.analysis_details.shorthand.curve_smoothness},
+            {name: "stroke_terminal", data: features.analysis_details.shorthand.stroke_terminal},
+            {name: "symbol_density", data: features.analysis_details.shorthand.symbol_density}
+        ],
     } : null;
 
     // Get selected feature data
