@@ -86,6 +86,7 @@ export default function Home() {
     const [features, setFeatures] = useState<HandwritingFeatures | null>(null);
     const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
     const [showFeatureDialog, setShowFeatureDialog] = useState(false);
+    const [activeTab, setActiveTab] = useState("Block Lettering");
 
     const handleFileUpload = async (file: Blob) => {
         try {
@@ -134,6 +135,23 @@ export default function Home() {
                         }
                         
                         setFeatures(data);
+                        
+                        // Determine the highest scoring style and set it as the active tab
+                        const styleScores = data.handwriting_style_scores;
+                        const topStyle = Object.entries(styleScores)
+                            .sort(([, a], [, b]) => b.score - a.score)[0][0];
+                        
+                        // Map the style key to tab name
+                        const styleToTabMap: Record<string, string> = {
+                            block_lettering: "Block Lettering",
+                            cursive: "Cursive",
+                            calligraphic: "Calligraphic",
+                            italic: "Italic",
+                            shorthand: "Shorthand",
+                            print: "Print"
+                        };
+                        
+                        setActiveTab(styleToTabMap[topStyle] || "Block Lettering");
                         resolve(data);
                     } catch (error) {
                         reject(error);
@@ -283,7 +301,11 @@ export default function Home() {
                                             <span className="text-red-500">{error}</span>
                                         </div>
                                     ) : features ? (
-                                        <Tabs defaultValue="Block Lettering" className="w-full">
+                                        <Tabs 
+                                            value={activeTab} 
+                                            onValueChange={setActiveTab} 
+                                            className="w-full"
+                                        >
                                             <TabsList className="grid grid-cols-6 mb-4">
                                                 {featureGroups && Object.keys(featureGroups).map((group) => (
                                                     <TabsTrigger key={group} value={group}>{group}</TabsTrigger>
