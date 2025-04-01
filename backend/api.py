@@ -675,7 +675,7 @@ async def analyze_image(request: ImageRequest):
                         "slant_angle": {
                             "data": convert_numpy_types(slant_angle_results),
                             "is_dominant": True,
-                            "is_shared": False,
+                            "is_shared": True,
                             "weightage": W_ITALIC_SLANT
                         },
                         "inter_letter_spacing": {
