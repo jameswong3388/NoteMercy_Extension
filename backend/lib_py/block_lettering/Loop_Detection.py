@@ -35,7 +35,6 @@ class LoopDetectionAnalyzer:
         self.original_height, self.original_width = self.img.shape[:2]
 
         # --- Internal state (results of preprocessing/analysis) ---
-        self.gray_image = None  # Will be created in _preprocess_image
         self.binary_image = None  # Will be created in _preprocess_image
         self.detected_loops = []
         self.loop_vertex_counts = []
@@ -57,19 +56,30 @@ class LoopDetectionAnalyzer:
         """
         Applies fixed preprocessing steps.
         """
-        # 1. Convert to Grayscale (Moved from __init__)
-        self.gray_image = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
+        _BLUR_KSIZE = 3  # Kernel size for Gaussian Blur (must be odd > 1, or <=1 to disable)
+        _THRESH_VALUE = 127  # Threshold value for cv2.threshold
+        _THRESH_MAX_VALUE = 255  # Max value for thresholding
+        _THRESH_TYPE = cv2.THRESH_BINARY_INV  # Invert: strokes become white
+        _MORPH_CLOSE_KERNEL_SIZE = (3, 3)  # Kernel size for morphological closing
 
-        # 2. Apply fixed Gaussian blur kernel size
-        BLUR_KSIZE = 25
-        # Use the newly created gray_image for blurring
-        processed = cv2.GaussianBlur(self.gray_image, (BLUR_KSIZE, BLUR_KSIZE), 0)
+        # 1. Convert to Grayscale
+        if len(self.img.shape) == 3:
+            self.gray_image = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
+        else:  # Assume already grayscale
+            self.gray_image = self.img.copy()
 
-        # 3. Fixed Otsu's thresholding
-        _, self.binary_image = cv2.threshold(processed, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        processed = self.gray_image.copy()
 
-        # 4. Morphological closing
-        kernel = np.ones((3, 3), np.uint8)
+        # 2. Gaussian Blur (Optional)
+        if _BLUR_KSIZE > 1:
+            ksize = _BLUR_KSIZE if _BLUR_KSIZE % 2 != 0 else _BLUR_KSIZE + 1  # Ensure odd
+            processed = cv2.GaussianBlur(processed, (ksize, ksize), 0)
+
+        # 3. Thresholding
+        ret, self.binary_image = cv2.threshold(processed, _THRESH_VALUE, _THRESH_MAX_VALUE, _THRESH_TYPE)
+
+        # 4. Morphological Closing (to close small gaps)
+        kernel = np.ones(_MORPH_CLOSE_KERNEL_SIZE, np.uint8)
         self.binary_image = cv2.morphologyEx(self.binary_image, cv2.MORPH_CLOSE, kernel)
 
     def _find_contours_and_filter_loops(self):

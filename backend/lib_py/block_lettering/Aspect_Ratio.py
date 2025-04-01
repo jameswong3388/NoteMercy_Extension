@@ -54,21 +54,26 @@ class AspectRatioAnalyzer:
         """
         # --- Fixed Preprocessing Parameters ---
         # Set blur kernel size (1 = no blur, 3, 5, etc. - must be odd if > 1)
-        BLUR_KSIZE = 5
+        _BLUR_KSIZE = 3  # Kernel size for Gaussian Blur (must be odd > 1, or <=1 to disable)
+        _THRESH_VALUE = 127  # Threshold value for cv2.threshold
+        _THRESH_MAX_VALUE = 255  # Max value for thresholding
+        _THRESH_TYPE = cv2.THRESH_BINARY_INV  # Invert: strokes become white
 
-        # 1. Grayscale
+        # 1. Convert to Grayscale
         if len(self.img.shape) == 3:
             self.gray_image = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
-        else:
+        else:  # Assume already grayscale
             self.gray_image = self.img.copy()
+
         processed = self.gray_image.copy()
 
-        # 2. Gaussian Blur
-        processed = cv2.GaussianBlur(processed, (BLUR_KSIZE, BLUR_KSIZE), 0)
+        # 2. Noise Reduction (Optional)
+        if _BLUR_KSIZE > 1:
+            ksize = _BLUR_KSIZE if _BLUR_KSIZE % 2 != 0 else _BLUR_KSIZE + 1  # Ensure odd
+            processed = cv2.GaussianBlur(processed, (ksize, ksize), 0)
 
-        # 3. Adaptive Thresholding
-        # Apply adaptive thresholding to improve handwriting clarity
-        self.binary_image = cv2.adaptiveThreshold(processed, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
+        # 3. Thresholding
+        ret, self.binary_image = cv2.threshold(processed, _THRESH_VALUE, _THRESH_MAX_VALUE, _THRESH_TYPE)
 
     def _check_for_continuity(self):
         """
@@ -310,7 +315,7 @@ class AspectRatioAnalyzer:
 # === Example usage ===
 if __name__ == "__main__":
     # --- Configuration ---
-    image_path = r"C:\Users\Samson\Desktop\Coding\IPPR\NoteMercy_Extension\backend\atest\calligraphic.png"  # <-- CHANGE THIS PATH if needed
+    image_path = r"C:\Users\Samson\Desktop\Coding\IPPR\NoteMercy_Extension\backend\atest\block-letters.jpg"  # <-- CHANGE THIS PATH if needed
     analyzer = AspectRatioAnalyzer(image_path, is_base64=False)
     results = analyzer.analyze(debug=True)
     # print(results)
@@ -333,9 +338,3 @@ if __name__ == "__main__":
         img_data = base64.b64decode(results['graphs'][0])
         img = Image.open(io.BytesIO(img_data))
         img.show()
-
-    if results['preprocessed_image']:
-      print("\nDisplaying preprocessed image...")
-      img_data = base64.b64decode(results['preprocessed_image'])
-      img = Image.open(io.BytesIO(img_data))
-      img.show()

@@ -69,8 +69,6 @@ class SymbolDensityAnalyzer:
         _THRESH_VALUE = 127  # Threshold value for cv2.threshold
         _THRESH_MAX_VALUE = 255  # Max value for thresholding
         _THRESH_TYPE = cv2.THRESH_BINARY_INV  # Invert: strokes become white
-        _NOISE_REDUCTION_KERNEL = 3  # Kernel size for Median Blur (must be odd > 1, or <=1 to disable)
-        _MORPH_CLOSE_KERNEL_SIZE = (5, 5)  # Kernel size for morphological closing
 
         # 1. Grayscale
         gray_image = cv2.cvtColor(self.img_color, cv2.COLOR_BGR2GRAY)

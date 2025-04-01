@@ -61,7 +61,6 @@ class StrokeTerminalAnalyzer:
         _THRESH_VALUE = 127      # Threshold value for cv2.threshold
         _THRESH_MAX_VALUE = 255  # Max value for thresholding
         _THRESH_TYPE = cv2.THRESH_BINARY_INV # Invert: strokes become white
-        _NOISE_REDUCTION_KERNEL = 3 # Kernel size for Median Blur (must be odd > 1, or <=1 to disable)
         _MORPH_CLOSE_KERNEL_SIZE = (5, 5) # Kernel size for morphological closing
 
         # 1. Grayscale
@@ -72,19 +71,13 @@ class StrokeTerminalAnalyzer:
         if _BLUR_KSIZE > 1:
             ksize = _BLUR_KSIZE if _BLUR_KSIZE % 2 != 0 else _BLUR_KSIZE + 1 # Ensure odd
             processed = cv2.GaussianBlur(processed, (ksize, ksize), 0)
-        # cv2.imshow('blured', processed)
-        # cv2.waitKey(0)
 
         # 3. Thresholding
         ret, self.binary_image = cv2.threshold(processed, _THRESH_VALUE, _THRESH_MAX_VALUE, _THRESH_TYPE)
-        # cv2.imshow('threshold', self.binary_image)
-        # cv2.waitKey(0)
 
         # 4. Morphological Closing (to close small gaps)
         kernel = np.ones(_MORPH_CLOSE_KERNEL_SIZE, np.uint8)
         self.binary_image = cv2.morphologyEx(self.binary_image, cv2.MORPH_CLOSE, kernel)
-        # cv2.imshow('closed', self.binary_image)
-        # cv2.waitKey(0)
 
     def _find_stroke_endpoints(self):
         """

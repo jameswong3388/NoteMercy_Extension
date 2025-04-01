@@ -666,17 +666,17 @@ async def analyze_image(request: ImageRequest):
                         }
                     },
                     "italic": {
-                        "vertical_stroke_proportion": {
-                            "data": convert_numpy_types(vertical_stroke_results),
-                            "is_dominant": False,
-                            "is_shared": False,
-                            "weightage": W_ITALIC_VERTICAL
-                        },
                         "slant_angle": {
                             "data": convert_numpy_types(slant_angle_results),
                             "is_dominant": True,
                             "is_shared": True,
                             "weightage": W_ITALIC_SLANT
+                        },
+                        "vertical_stroke_proportion": {
+                            "data": convert_numpy_types(vertical_stroke_results),
+                            "is_dominant": False,
+                            "is_shared": False,
+                            "weightage": W_ITALIC_VERTICAL
                         },
                         "inter_letter_spacing": {
                             "data": convert_numpy_types(spacing_results),
@@ -706,17 +706,17 @@ async def analyze_image(request: ImageRequest):
                         }
                     },
                     "shorthand": {
-                        "curve_smoothness": {
-                            "data": convert_numpy_types(smooth_curves_results),
-                            "is_dominant": False,
-                            "is_shared": False,
-                            "weightage": W_SHORTHAND_SMOOTHNESS
-                        },
                         "stroke_terminal": {
                             "data": convert_numpy_types(stroke_terminal_results),
                             "is_dominant": False,
                             "is_shared": True,
                             "weightage": W_SHORTHAND_TERMINAL
+                        },
+                        "curve_smoothness": {
+                            "data": convert_numpy_types(smooth_curves_results),
+                            "is_dominant": False,
+                            "is_shared": False,
+                            "weightage": W_SHORTHAND_SMOOTHNESS
                         },
                         "symbol_density": {
                             "data": convert_numpy_types(symbol_density_results),

@@ -26,12 +26,12 @@
     &quot;assignee&quot;: &quot;jameswong3388&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/jameswong3388/NoteMercy_Extension.git&quot;,
-    &quot;accountId&quot;: &quot;2b535b19-8cc4-41d7-8f3d-71b8e776fb24&quot;
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/jameswong3388/NoteMercy_Extension.git",
+    "accountId": "0606eda2-35a8-4499-93ea-7b2e05fa62ce"
   }
-}</component>
+}]]></component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 4
 }</component>
@@ -61,13 +61,13 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "git-widget-placeholder": "main",
-    "last_opened_file_path": "/Users/jameswong/PycharmProjects/NoteMercy_Extension/backend/lib_py/shorthand",
+    "last_opened_file_path": "C:/Users/Samson/Desktop/Coding/IPPR2/frontend",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "settings.editor.selected.configurable": "project.propVCSSupport.DirectoryMappings",
     "ts.external.directory.path": "/Users/jameswong/PycharmProjects/NoteMercy_Extension/frontend/node_modules/typescript/lib",
     "vue.rearranger.settings.migration": "true"
   }
@@ -217,8 +217,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-1632447f56bf-JavaScript-PY-243.25659.43" />
-        <option value="bundled-python-sdk-181015f7ab06-4df51de95216-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-243.25659.43" />
+        <option value="bundled-js-predefined-d6986cc7102b-1632447f56bf-JavaScript-PY-243.26053.29" />
+        <option value="bundled-python-sdk-b1dbf8ef85a6-4df51de95216-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-243.26053.29" />
       </set>
     </attachedChunks>
   </component>
@@ -241,6 +241,7 @@
       <workItem from="1742977606509" duration="228000" />
       <workItem from="1742977841342" duration="11000" />
       <workItem from="1742977855615" duration="13370000" />
+      <workItem from="1743472031790" duration="203000" />
     </task>
     <task id="LOCAL-00001" summary="Initial project setup with configuration files, backend image processing scripts, and frontend UI components. Added various utility functions and established project structure.">
       <option name="closed" value="true" />
@@ -361,6 +362,9 @@
     <option name="version" value="3" />
   </component>
   <component name="VcsManagerConfiguration">
+    <ignored-roots>
+      <path value="$PROJECT_DIR$/frontend" />
+    </ignored-roots>
     <MESSAGE value="Initial project setup with configuration files, backend image processing scripts, and frontend UI components. Added various utility functions and established project structure." />
     <MESSAGE value="Remove obsolete loopiness analysis image from backend assets." />
     <MESSAGE value="Add new image processing functions for angular deviation and flourish extension ratio analysis." />

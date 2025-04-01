@@ -49,7 +49,7 @@ class AngularityAnalyzer:
         self.all_vertex_densities = []
         self.all_areas = []
 
-    def preprocess_image(self, blur_ksize=5):
+    def preprocess_image(self):
         """
         Applies preprocessing: Grayscale, Blur, Thresholding.
         Stores results in self.gray_image and self.binary_image.
@@ -57,9 +57,11 @@ class AngularityAnalyzer:
         Parameters:
             blur_ksize (int): Kernel size for Gaussian Blur (odd number > 1). 0 or 1 disables blur.
         """
-        if self.img is None:
-            # This should ideally not happen if __init__ succeeded
-            raise RuntimeError("Cannot preprocess: Original image not loaded.")
+        # --- Fixed Preprocessing Parameters ---
+        _BLUR_KSIZE = 3  # Kernel size for Gaussian Blur (must be odd > 1, or <=1 to disable)
+        _THRESH_VALUE = 127  # Threshold value for cv2.threshold
+        _THRESH_MAX_VALUE = 255  # Max value for thresholding
+        _THRESH_TYPE = cv2.THRESH_BINARY_INV  # Invert: strokes become white
 
         # 1. Convert to Grayscale
         if len(self.img.shape) == 3:
@@ -70,14 +72,12 @@ class AngularityAnalyzer:
         processed = self.gray_image.copy()
 
         # 2. Noise Reduction (Optional)
-        if blur_ksize > 1:
-            ksize = blur_ksize if blur_ksize % 2 != 0 else blur_ksize + 1
+        if _BLUR_KSIZE > 1:
+            ksize = _BLUR_KSIZE if _BLUR_KSIZE % 2 != 0 else _BLUR_KSIZE + 1  # Ensure odd
             processed = cv2.GaussianBlur(processed, (ksize, ksize), 0)
 
-        # 3. Binarization (Otsu's method)
-        _, self.binary_image = cv2.threshold(processed, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-
-        # Optional Morphological ops could modify self.binary_image here
+        # 3. Thresholding
+        ret, self.binary_image = cv2.threshold(processed, _THRESH_VALUE, _THRESH_MAX_VALUE, _THRESH_TYPE)
 
     def _find_and_analyze_contours(self, approx_epsilon_factor=0.01, contour_min_area=50):
         """
@@ -181,7 +181,7 @@ class AngularityAnalyzer:
         }
         return metrics
 
-    def _generate_visualization(self, pp_blur_ksize, approx_epsilon_factor, metrics):
+    def _generate_visualization(self, approx_epsilon_factor, metrics):
         """
         Generates the visualization plot using stored data (images, polygons, metrics)
         and appends the base64 encoded graph to self.graphs.
@@ -202,7 +202,7 @@ class AngularityAnalyzer:
         # Plot 2: Preprocessed Binary Image
         plt.subplot(2, 2, 2);
         plt.imshow(self.binary_image, cmap='gray')
-        plt.title(f"Preprocessed (Blur K={pp_blur_ksize}, Otsu)")
+        plt.title(f"Preprocessed Image")
         plt.axis('off')
 
         # Plot 3: Simplified Polygons on Original
@@ -242,7 +242,7 @@ class AngularityAnalyzer:
         graphs.append(plot_base64)
         return graphs
 
-    def analyze(self, debug=False, approx_epsilon_factor=0.01, pp_blur_ksize=5, contour_min_area=50):
+    def analyze(self, debug=False, approx_epsilon_factor=0.01, contour_min_area=50):
         """
         Orchestrates the analysis process: preprocess, find/analyze contours,
         calculate statistics, and optionally generate visualization.
@@ -260,7 +260,7 @@ class AngularityAnalyzer:
         self._reset_analysis_data()
 
         # --- 1. Preprocess ---
-        self.preprocess_image(blur_ksize=pp_blur_ksize)
+        self.preprocess_image()
 
         # --- 2. Find and Analyze Contours ---
         self._find_and_analyze_contours(
@@ -280,7 +280,6 @@ class AngularityAnalyzer:
         # --- 4. Generate Visualization (Optional) ---
         if debug:
             result['graphs'] =  self._generate_visualization(
-                pp_blur_ksize=pp_blur_ksize,
                 approx_epsilon_factor=approx_epsilon_factor,
                 metrics=metrics
             )
@@ -293,7 +292,7 @@ class AngularityAnalyzer:
 # === Example usage (remains the same) ===
 if __name__ == "__main__":
     # --- Configuration ---
-    image_path = r"C:\Users\Samson\Desktop\Coding\IPPR\NoteMercy_Extension\backend\atest\print.jpg"  # Replace
+    image_path = r"C:\Users\Samson\Desktop\Coding\IPPR\NoteMercy_Extension\backend\atest\block-letters.jpg"  # Replace
     analyzer = AngularityAnalyzer(image_path, is_base64=False)
     results = analyzer.analyze(debug=True)
 
@@ -314,8 +313,3 @@ if __name__ == "__main__":
         img_data = base64.b64decode(results['graphs'][0])
         img = Image.open(io.BytesIO(img_data))
         img.show()  # This will open the image in your default image viewer
-    if results['preprocessed_image']:
-        print("\nDisplaying preprocessed image...")
-        preprocessed_img_data = base64.b64decode(results['preprocessed_image'])
-        preprocessed_img = Image.open(io.BytesIO(preprocessed_img_data))
-        preprocessed_img.show()
