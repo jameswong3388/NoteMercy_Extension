@@ -21,6 +21,17 @@ interface HandwritingStyle {
     component_scores?: Record<string, number>;
 }
 
+interface FeatureData {
+    data: {
+        metrics: Record<string, any>;
+        graphs: string[];
+        preprocessed_image: string;
+    };
+    is_dominant: boolean;
+    is_shared: boolean;
+    weightage: number;
+}
+
 interface HandwritingFeatures {
     handwriting_style_scores: {
         block_lettering: HandwritingStyle;
@@ -32,35 +43,35 @@ interface HandwritingFeatures {
     };
     analysis_details: {
         block_lettering: {
-            angularity: any;
-            aspect_ratio: any;
-            loop_detection: any;
+            angularity: FeatureData;
+            aspect_ratio: FeatureData;
+            loop_detection: FeatureData;
         };
         italic: {
-            vertical_stroke_proportion: any;
-            slant_angle: any;
-            inter_letter_spacing: any;
+            vertical_stroke_proportion: FeatureData;
+            slant_angle: FeatureData;
+            inter_letter_spacing: FeatureData;
         };
         cursive: {
-            stroke_connectivity: any;
-            enclosed_loop_ratio: any;
-            curvature_continuity: any;
-            stroke_consistency: any;
+            stroke_connectivity: FeatureData;
+            enclosed_loop_ratio: FeatureData;
+            curvature_continuity: FeatureData;
+            stroke_consistency: FeatureData;
         };
         calligraphic: {
-            stroke_width_variation: any;
-            continuous_part_coverage: any;
-            right_angle_corner_detection: any;
+            stroke_width_variation: FeatureData;
+            continuous_part_coverage: FeatureData;
+            right_angle_corner_detection: FeatureData;
         };
         shorthand: {
-            curve_smoothness: any;
-            stroke_terminal: any;
-            symbol_density: any;
+            curve_smoothness: FeatureData;
+            stroke_terminal: FeatureData;
+            symbol_density: FeatureData;
         };
         print: {
-            vertical_alignment: any;
-            letter_size_uniformity: any;
-            discrete_letter: any;
+            vertical_alignment: FeatureData;
+            letter_size_uniformity: FeatureData;
+            discrete_letter: FeatureData;
         };
     };
 }
@@ -107,7 +118,21 @@ export default function Home() {
                             throw new Error(errorData.detail || 'Failed to process image');
                         }
 
-                        const data = await response.json();
+                        const responseData = await response.json();
+                        
+                        // Fix for the nested data structure in API response
+                        let data: HandwritingFeatures;
+                        
+                        // Check if data is nested inside an object with a curly brace
+                        if (responseData && typeof responseData === 'object' && Object.keys(responseData).length === 1 && 
+                            Object.keys(responseData)[0] === '0') {
+                            // The API is returning a nested object with a numeric key
+                            data = responseData['0'];
+                        } else {
+                            // Use the response data directly if it's already in the expected format
+                            data = responseData;
+                        }
+                        
                         setFeatures(data);
                         resolve(data);
                     } catch (error) {
@@ -190,8 +215,11 @@ export default function Home() {
         
         if (!featureGroup) return null;
         
-        // Type assertion to handle feature access
-        return (featureGroup as Record<string, any>)[feature] || null;
+        // Get the feature object
+        const featureObj = (featureGroup as Record<string, any>)[feature];
+        if (!featureObj) return null;
+        
+        return featureObj;
     };
     
     const selectedFeatureData = getSelectedFeatureData();
@@ -269,11 +297,28 @@ export default function Home() {
                                                                 onClick={() => handleFeatureSelect(feature.name, feature.data, group)}
                                                             >
                                                                 <CardHeader className="py-3">
-                                                                    <CardTitle className="text-base">{formatFeatureName(feature.name)}</CardTitle>
+                                                                    <CardTitle className="text-base flex justify-between items-start">
+                                                                        <span>{formatFeatureName(feature.name)}</span>
+                                                                        <div className="flex gap-1 flex-wrap">
+                                                                            {(feature.data.is_dominant) && (
+                                                                                <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                                                                                    Dominant
+                                                                                </span>
+                                                                            )}
+                                                                            {(feature.data.is_shared) && (
+                                                                                <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-700/10">
+                                                                                    Shared
+                                                                                </span>
+                                                                            )}
+                                                                            <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-700/10">
+                                                                                W: {feature.data.weightage.toFixed(1)}
+                                                                            </span>
+                                                                        </div>
+                                                                    </CardTitle>
                                                                 </CardHeader>
                                                                 <CardContent className="py-2">
                                                                     <pre className="text-xs overflow-hidden text-ellipsis max-h-20">
-                                                                        {JSON.stringify(feature.data, null, 2)}
+                                                                        {JSON.stringify((feature.data as unknown as { data: { metrics: Record<string, any> } })?.data?.metrics || {}, null, 2)}
                                                                     </pre>
                                                                     <Button
                                                                         variant="outline"
@@ -460,21 +505,38 @@ export default function Home() {
                     <DialogContent className="max-w-4xl max-h-[90vh]">
                         <PhotoProvider>
                             <DialogHeader>
-                                <DialogTitle>
-                                    {selectedFeature ? formatFeatureName(selectedFeature.split('.')[1] || '') : "Feature Details"}
+                                <DialogTitle className="flex justify-between items-start">
+                                    <span>{selectedFeature ? formatFeatureName(selectedFeature.split('.')[1] || '') : "Feature Details"}</span>
+                                    {selectedFeatureData && (
+                                        <div className="flex gap-1 flex-wrap">
+                                            {selectedFeatureData.is_dominant && (
+                                                <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                                                    Dominant
+                                                </span>
+                                            )}
+                                            {selectedFeatureData.is_shared && (
+                                                <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-700/10">
+                                                    Shared
+                                                </span>
+                                            )}
+                                            <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-700/10">
+                                                W: {selectedFeatureData.weightage.toFixed(1)}
+                                            </span>
+                                        </div>
+                                    )}
                                 </DialogTitle>
                             </DialogHeader>
                             <ScrollArea className="mt-4 max-h-[calc(90vh-80px)]">
                                 {selectedFeatureData && (
                                     <div className="space-y-6">
                                         {/* 1. Preprocessed Image Section (if available) */}
-                                        {selectedFeatureData.preprocessed_image && (
+                                        {(selectedFeatureData as unknown as { data: { preprocessed_image: string } })?.data?.preprocessed_image && (
                                             <div className="bg-card border rounded-lg p-4">
                                                 <h3 className="font-semibold mb-4">Preprocessed Image</h3>
                                                 <div className="flex justify-center overflow-hidden">
-                                                    <PhotoView src={`data:image/png;base64,${selectedFeatureData.preprocessed_image}`}>
+                                                    <PhotoView src={`data:image/png;base64,${(selectedFeatureData as unknown as { data: { preprocessed_image: string } }).data.preprocessed_image}`}>
                                                         <img
-                                                            src={`data:image/png;base64,${selectedFeatureData.preprocessed_image}`}
+                                                            src={`data:image/png;base64,${(selectedFeatureData as unknown as { data: { preprocessed_image: string } }).data.preprocessed_image}`}
                                                             alt="Preprocessed"
                                                             className="max-w-full object-contain max-h-[300px] cursor-zoom-in"
                                                         />
@@ -487,18 +549,22 @@ export default function Home() {
                                         <div className="bg-muted p-4 rounded-lg">
                                             <h3 className="font-semibold mb-2">Data</h3>
                                             <pre className="text-sm overflow-auto max-h-60 whitespace-pre-wrap break-words">
-                                                {JSON.stringify(selectedFeatureData.metrics || selectedFeatureData, null, 2)}
+                                                {JSON.stringify(
+                                                    (selectedFeatureData as unknown as { data: { metrics: Record<string, any> } })?.data?.metrics || {}, 
+                                                    null, 2
+                                                )}
                                             </pre>
                                         </div>
 
                                         {/* 3. Graph Visualization Section */}
                                         <div className="bg-card border rounded-lg p-4">
                                             <h3 className="font-semibold mb-4">Graph Visualization</h3>
-                                            {selectedFeatureData.graphs && selectedFeatureData.graphs.length > 0 ? (
+                                            {(selectedFeatureData as unknown as { data: { graphs: string[] } })?.data?.graphs && 
+                                             (selectedFeatureData as unknown as { data: { graphs: string[] } }).data.graphs.length > 0 ? (
                                                 <div className="flex justify-center overflow-hidden">
-                                                    <PhotoView src={`data:image/png;base64,${selectedFeatureData.graphs[0]}`}>
+                                                    <PhotoView src={`data:image/png;base64,${(selectedFeatureData as unknown as { data: { graphs: string[] } }).data.graphs[0]}`}>
                                                         <img
-                                                            src={`data:image/png;base64,${selectedFeatureData.graphs[0]}`}
+                                                            src={`data:image/png;base64,${(selectedFeatureData as unknown as { data: { graphs: string[] } }).data.graphs[0]}`}
                                                             alt={`${selectedFeature?.split('.')[1]} graph`}
                                                             className="max-w-full object-contain max-h-[300px] cursor-zoom-in"
                                                         />

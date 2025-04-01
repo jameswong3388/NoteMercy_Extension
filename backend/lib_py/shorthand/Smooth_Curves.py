@@ -279,7 +279,6 @@ class StrokeSmoothnessAnalyzer:
                 plt.savefig(buf, format='png', bbox_inches='tight')
                 buf.seek(0)
                 plot_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
-                plt.show()
                 plt.close()
 
                 result['graphs'].append(plot_base64)

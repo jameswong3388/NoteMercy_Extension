@@ -20,9 +20,8 @@ from lib_py.italic.Vertical_Stroke_Proportion import VerticalStrokeAnalyzer
 from lib_py.print.Letter_Discreteness import LetterDiscretenessAnalyzer
 from lib_py.print.Letter_Size_Uniformity import LetterUniformityAnalyzer
 from lib_py.print.Vertical_Alignment_Consistency import VerticalAlignmentAnalyzer
-from lib_py.shorthand.Stroke_Terminal import StrokeTerminalAnalyzer
 from lib_py.shorthand.Smooth_Curves import StrokeSmoothnessAnalyzer
-# Removed: from lib_py.shorthand.Stroke_Continuity import StrokeContinuityAnalyzer
+from lib_py.shorthand.Stroke_Terminal import StrokeTerminalAnalyzer
 from lib_py.shorthand.Symbol_Density import SymbolDensityAnalyzer
 
 app = FastAPI()
@@ -62,6 +61,9 @@ def convert_numpy_types(obj):
     if isinstance(obj, np.integer):
         return int(obj)
     elif isinstance(obj, np.floating):
+        # Handle NaN, inf, and -inf values by converting them to None
+        if np.isnan(obj) or np.isinf(obj):
+            return None
         return float(obj)
     elif isinstance(obj, np.bool_):
         return bool(obj)
@@ -155,8 +157,10 @@ async def analyze_image(request: ImageRequest):
             elif block_aspect_ratio_std_dev >= BLOCK_AR_STD_DEV_MIN_SCORE_THRESHOLD:
                 block_aspect_ratio_consistency_score = 0.0
             else:
-                block_aspect_ratio_consistency_score = (BLOCK_AR_STD_DEV_MIN_SCORE_THRESHOLD - block_aspect_ratio_std_dev) / \
-                                                       (BLOCK_AR_STD_DEV_MIN_SCORE_THRESHOLD - BLOCK_AR_STD_DEV_MAX_SCORE_THRESHOLD)
+                block_aspect_ratio_consistency_score = (
+                                                               BLOCK_AR_STD_DEV_MIN_SCORE_THRESHOLD - block_aspect_ratio_std_dev) / \
+                                                       (
+                                                               BLOCK_AR_STD_DEV_MIN_SCORE_THRESHOLD - BLOCK_AR_STD_DEV_MAX_SCORE_THRESHOLD)
                 block_aspect_ratio_consistency_score = max(0.0, min(1.0, block_aspect_ratio_consistency_score))
 
         # --- Loop Presence Score (Inverse) ---
@@ -240,7 +244,8 @@ async def analyze_image(request: ImageRequest):
         CURSIVE_SEGMENT_LENGTH_THRESHOLD_FOR_MAX_SCORE = 0.05
         cursive_curvature_feature_score = 0.0
         if CURSIVE_SEGMENT_LENGTH_THRESHOLD_FOR_MAX_SCORE > 0:
-            cursive_curvature_feature_score = min(1.0, max(0.0, cursive_avg_norm_segment_length / CURSIVE_SEGMENT_LENGTH_THRESHOLD_FOR_MAX_SCORE))
+            cursive_curvature_feature_score = min(1.0, max(0.0,
+                                                           cursive_avg_norm_segment_length / CURSIVE_SEGMENT_LENGTH_THRESHOLD_FOR_MAX_SCORE))
         else:
             cursive_curvature_feature_score = 1.0 if cursive_avg_norm_segment_length > 0 else 0.0
 
@@ -256,9 +261,11 @@ async def analyze_image(request: ImageRequest):
             elif cursive_total_components >= CURSIVE_CONNECTIVITY_MIN_COMPONENTS_FOR_MIN_SCORE:
                 cursive_connectivity_feature_score = 0.0
             else:
-                denominator = (CURSIVE_CONNECTIVITY_MIN_COMPONENTS_FOR_MIN_SCORE - CURSIVE_CONNECTIVITY_MAX_COMPONENTS_FOR_MAX_SCORE)
+                denominator = (
+                        CURSIVE_CONNECTIVITY_MIN_COMPONENTS_FOR_MIN_SCORE - CURSIVE_CONNECTIVITY_MAX_COMPONENTS_FOR_MAX_SCORE)
                 if denominator > 0:
-                    cursive_connectivity_feature_score = (CURSIVE_CONNECTIVITY_MIN_COMPONENTS_FOR_MIN_SCORE - cursive_total_components) / denominator
+                    cursive_connectivity_feature_score = (
+                                                                 CURSIVE_CONNECTIVITY_MIN_COMPONENTS_FOR_MIN_SCORE - cursive_total_components) / denominator
                     cursive_connectivity_feature_score = min(1.0, max(0.0, cursive_connectivity_feature_score))
                 else:
                     cursive_connectivity_feature_score = 0.0
@@ -299,19 +306,47 @@ async def analyze_image(request: ImageRequest):
         italic_vertical_stroke_metrics = vertical_stroke_results.get('metrics', {})
 
         # --- Letter Spacing Uniformity Score ---
-        italic_spacing_is_uniform = italic_spacing_metrics.get('is_uniform')
-        italic_spacing_gap_count = italic_spacing_metrics.get('gap_count', 0)
-        MIN_GAPS_FOR_SEPARATION = 2
+        # Updated logic using metrics from LetterSpacingAnalyzer
+        valley_count = italic_spacing_metrics.get('valley_count', 0)
+        avg_valley_width = italic_spacing_metrics.get('avg_valley_width', 0.0)
+        valley_width_std = italic_spacing_metrics.get('valley_width_std', 0.0)
 
-        if italic_spacing_gap_count < MIN_GAPS_FOR_SEPARATION:
-            italic_spacing_feature_score = 0.1 if italic_spacing_gap_count == 1 else 0.0
-        else:
-            if italic_spacing_is_uniform is True:
-                italic_spacing_feature_score = 1.0
-            elif italic_spacing_is_uniform is False:
-                italic_spacing_feature_score = 0.6
+        italic_spacing_feature_score = 0.0  # Default score
+
+        MIN_VALLEYS_FOR_STD_SCORE = 2  # Need at least 2 gaps to measure variation reliably
+        # Define thresholds for Coefficient of Variation (CV = std_dev / mean)
+        # Lower CV means more uniform spacing (good). These thresholds might need tuning.
+        MAX_CV_FOR_PERFECT_SCORE = 0.30  # Below this CV -> score 1.0
+        MIN_CV_FOR_ZERO_SCORE = 0.80  # Above this CV -> score 0.0
+
+        if valley_count >= MIN_VALLEYS_FOR_STD_SCORE:
+            # Calculate Coefficient of Variation (CV) for valley widths
+            if avg_valley_width > 1e-6:  # Avoid division by zero or near-zero average
+                valley_cv = valley_width_std / avg_valley_width
+
+                if valley_cv <= MAX_CV_FOR_PERFECT_SCORE:
+                    italic_spacing_feature_score = 1.0
+                elif valley_cv >= MIN_CV_FOR_ZERO_SCORE:
+                    italic_spacing_feature_score = 0.0
+                else:
+                    # Linear interpolation between the thresholds
+                    score_range = MIN_CV_FOR_ZERO_SCORE - MAX_CV_FOR_PERFECT_SCORE
+                    if score_range > 1e-6:  # Avoid division by zero if thresholds are the same
+                        # Score decreases as CV increases
+                        italic_spacing_feature_score = 1.0 - (valley_cv - MAX_CV_FOR_PERFECT_SCORE) / score_range
+                    else:  # Should ideally not happen if thresholds are set reasonably
+                        italic_spacing_feature_score = 0.5  # Assign mid-point if thresholds somehow collapse
             else:
-                italic_spacing_feature_score = 0.5
+                # Sufficient valleys detected, but average width is effectively zero?
+                # This is unusual and likely indicates poor segmentation or connected script. Treat as non-uniform.
+                italic_spacing_feature_score = 0.0
+
+        elif valley_count == 1:
+            # Only one gap detected - hard to judge uniformity. Assign a low score.
+            italic_spacing_feature_score = 0.1
+        # else valley_count == 0: score remains 0.0 (default) - no inter-letter gaps found.
+
+        # Final clamping to ensure score is strictly within [0, 1]
         italic_spacing_feature_score = max(0.0, min(1.0, italic_spacing_feature_score))
 
         # --- Slant Angle Score ---
@@ -325,14 +360,16 @@ async def analyze_image(request: ImageRequest):
             slant_excess = abs(italic_vertical_slant) - italic_slant_threshold_config
             TARGET_EXCESS_FOR_MAX_SCORE = 10.0
             BASE_SCORE_ON_THRESHOLD = 0.5
-            magnitude_component = min(1.0, max(0.0, slant_excess / TARGET_EXCESS_FOR_MAX_SCORE if TARGET_EXCESS_FOR_MAX_SCORE > 0 else 0.0))
+            magnitude_component = min(1.0, max(0.0,
+                                               slant_excess / TARGET_EXCESS_FOR_MAX_SCORE if TARGET_EXCESS_FOR_MAX_SCORE > 0 else 0.0))
             magnitude_score = BASE_SCORE_ON_THRESHOLD + (1.0 - BASE_SCORE_ON_THRESHOLD) * magnitude_component
 
             ITALIC_SLANT_STD_DEV_PENALTY_THRESHOLD = 10.0
             MAX_CONSISTENCY_PENALTY = 0.30
             slant_consistency_penalty = 0.0
             if italic_slant_std_dev > ITALIC_SLANT_STD_DEV_PENALTY_THRESHOLD:
-                penalty_factor = (italic_slant_std_dev - ITALIC_SLANT_STD_DEV_PENALTY_THRESHOLD) / (2 * ITALIC_SLANT_STD_DEV_PENALTY_THRESHOLD)
+                penalty_factor = (italic_slant_std_dev - ITALIC_SLANT_STD_DEV_PENALTY_THRESHOLD) / (
+                        2 * ITALIC_SLANT_STD_DEV_PENALTY_THRESHOLD)
                 slant_consistency_penalty = min(MAX_CONSISTENCY_PENALTY, max(0.0, penalty_factor))
 
             italic_slant_feature_score = magnitude_score * (1.0 - slant_consistency_penalty)
@@ -341,7 +378,7 @@ async def analyze_image(request: ImageRequest):
         # --- Vertical Stroke Proportion Score ---
         italic_ascender_ratio = italic_vertical_stroke_metrics.get('ascender_ratio', 1.0)
         italic_vertical_proportion_score = 0.0
-        ITALIC_VERTICAL_PROPORTION_BASELINE_RATIO = 1.3
+        ITALIC_VERTICAL_PROPORTION_BASELINE_RATIO = 1.2
         ITALIC_VERTICAL_PROPORTION_TARGET_RATIO_FOR_MAX_SCORE = 2.5
 
         if italic_ascender_ratio <= ITALIC_VERTICAL_PROPORTION_BASELINE_RATIO:
@@ -350,7 +387,8 @@ async def analyze_image(request: ImageRequest):
             italic_vertical_proportion_score = 1.0
         else:
             italic_vertical_proportion_score = (italic_ascender_ratio - ITALIC_VERTICAL_PROPORTION_BASELINE_RATIO) / \
-                                               (ITALIC_VERTICAL_PROPORTION_TARGET_RATIO_FOR_MAX_SCORE - ITALIC_VERTICAL_PROPORTION_BASELINE_RATIO)
+                                               (
+                                                       ITALIC_VERTICAL_PROPORTION_TARGET_RATIO_FOR_MAX_SCORE - ITALIC_VERTICAL_PROPORTION_BASELINE_RATIO)
             italic_vertical_proportion_score = min(1.0, max(0.0, italic_vertical_proportion_score))
 
         # --- Combined Italic Style Score ---
@@ -360,7 +398,7 @@ async def analyze_image(request: ImageRequest):
         total_italic_weight = W_ITALIC_SPACING + W_ITALIC_SLANT + W_ITALIC_VERTICAL
 
         # Removed shared_terminal_count check, kept other condition specific to italic features
-        if total_italic_weight > 0 and italic_spacing_gap_count > MIN_GAPS_FOR_SEPARATION:
+        if total_italic_weight > 0 and italic_is_slant_detected:
             italic_style_score = (W_ITALIC_SPACING * italic_spacing_feature_score +
                                   W_ITALIC_SLANT * italic_slant_feature_score +
                                   W_ITALIC_VERTICAL * italic_vertical_proportion_score) / total_italic_weight
@@ -443,7 +481,8 @@ async def analyze_image(request: ImageRequest):
         # --- Smooth Curves Score ---
         shorthand_avg_abs_angle_change = shorthand_smooth_curves_metrics.get('avg_abs_angle_change', 1.0)
         SHORTHAND_CURVE_SMOOTHNESS_ANGLE_CHANGE_THRESHOLD_RAD = 0.4
-        shorthand_curve_smoothness_feature_score = max(0.0, 1.0 - (shorthand_avg_abs_angle_change / SHORTHAND_CURVE_SMOOTHNESS_ANGLE_CHANGE_THRESHOLD_RAD))
+        shorthand_curve_smoothness_feature_score = max(0.0, 1.0 - (
+                shorthand_avg_abs_angle_change / SHORTHAND_CURVE_SMOOTHNESS_ANGLE_CHANGE_THRESHOLD_RAD))
 
         # --- Stroke Continuity Score --- (REMOVED)
         # Removed: Calculation of shorthand_stroke_continuity_feature_score
@@ -457,7 +496,8 @@ async def analyze_image(request: ImageRequest):
         shorthand_stroke_terminal_feature_score = 0.0
 
         if MIN_TERMINAL_COUNT <= shorthand_terminal_count <= MAX_TERMINAL_COUNT:
-            shorthand_stroke_terminal_feature_score = (MAX_TERMINAL_COUNT - shorthand_terminal_count) / MAX_TERMINAL_COUNT
+            shorthand_stroke_terminal_feature_score = (
+                                                              MAX_TERMINAL_COUNT - shorthand_terminal_count) / MAX_TERMINAL_COUNT
             shorthand_stroke_terminal_feature_score = min(1.0, max(0.0, 1.5 * shorthand_stroke_terminal_feature_score))
         else:
             shorthand_stroke_terminal_feature_score = 0.0
@@ -544,99 +584,202 @@ async def analyze_image(request: ImageRequest):
             cursive_style_score = 0.0
             calligraphic_style_score = 0.0
 
+        # If the handwriting style is italic, return 0 score for all other styles
+        if italic_is_slant_detected:
+            block_lettering_style_score = 0.0
+            calligraphic_style_score = 0.0
+            cursive_style_score = 0.0
+            shorthand_style_score = 0.0
+            print_style_score = 0.0
+
         # ===============================
         # === FINAL RESPONSE ASSEMBLY ===
         # ===============================
-        response_data = {
-            # Include detailed results from each analyzer
-            "analysis_details": {
-                "block_lettering": {
-                    "angularity": convert_numpy_types(angularity_results),
-                    "aspect_ratio": convert_numpy_types(aspect_ratio_results),
-                    "loop_detection": convert_numpy_types(loop_detection_results),
+        response_data = \
+            {
+                # Include detailed results from each analyzer
+                "analysis_details": {
+                    "block_lettering": {
+                        "angularity": {
+                            "data": convert_numpy_types(angularity_results),
+                            "is_dominant": True,
+                            "is_shared": True,
+                            "weightage": W_BLOCK_ANGULARITY
+                        },
+                        "aspect_ratio": {
+                            "data": convert_numpy_types(aspect_ratio_results),
+                            "is_dominant": False,
+                            "is_shared": False,
+                            "weightage": W_BLOCK_ASPECT_RATIO
+                        },
+                        "loop_detection": {
+                            "data": convert_numpy_types(loop_detection_results),
+                            "is_dominant": False,
+                            "is_shared": False,
+                            "weightage": W_BLOCK_LOOP
+                        }
+                    },
+                    "calligraphic": {
+                        "continuous_part_coverage": {
+                            "data": convert_numpy_types(coverage_results),
+                            "is_dominant": False,
+                            "is_shared": False,
+                            "weightage": W_CALLIGRAPHIC_COVERAGE
+                        },
+                        "right_angle_corner_detection": {
+                            "data": convert_numpy_types(right_angle_results),
+                            "is_dominant": False,
+                            "is_shared": False,
+                            "weightage": W_CALLIGRAPHIC_RIGHT_ANGLE
+                        },
+                        "stroke_width_variation": {
+                            "data": convert_numpy_types(stroke_width_results),
+                            "is_dominant": False,
+                            "is_shared": False,
+                            "weightage": W_CALLIGRAPHIC_WIDTH_VAR
+                        }
+                    },
+                    "cursive": {
+                        "stroke_connectivity": {
+                            "data": convert_numpy_types(connectivity_results),
+                            "is_dominant": False,
+                            "is_shared": False,
+                            "weightage": W_CURSIVE_CONNECTIVITY
+                        },
+                        "enclosed_loop_ratio": {
+                            "data": convert_numpy_types(loop_results),
+                            "is_dominant": False,
+                            "is_shared": False,
+                            "weightage": W_CURSIVE_LOOP
+                        },
+                        "curvature_continuity": {
+                            "data": convert_numpy_types(curvature_results),
+                            "is_dominant": False,
+                            "is_shared": False,
+                            "weightage": W_CURSIVE_CURVATURE
+                        },
+                        "stroke_consistency": {
+                            "data": convert_numpy_types(consistency_results),
+                            "is_dominant": False,
+                            "is_shared": False,
+                            "weightage": W_CURSIVE_CONSISTENCY
+                        }
+                    },
+                    "italic": {
+                        "vertical_stroke_proportion": {
+                            "data": convert_numpy_types(vertical_stroke_results),
+                            "is_dominant": False,
+                            "is_shared": False,
+                            "weightage": W_ITALIC_VERTICAL
+                        },
+                        "slant_angle": {
+                            "data": convert_numpy_types(slant_angle_results),
+                            "is_dominant": False,
+                            "is_shared": False,
+                            "weightage": W_ITALIC_SLANT
+                        },
+                        "inter_letter_spacing": {
+                            "data": convert_numpy_types(spacing_results),
+                            "is_dominant": False,
+                            "is_shared": False,
+                            "weightage": W_ITALIC_SPACING
+                        }
+                    },
+                    "print": {
+                        "vertical_alignment": {
+                            "data": convert_numpy_types(vertical_alignment_results),
+                            "is_dominant": False,
+                            "is_shared": False,
+                            "weightage": W_PRINT_ALIGNMENT
+                        },
+                        "letter_size_uniformity": {
+                            "data": convert_numpy_types(letter_size_results),
+                            "is_dominant": False,
+                            "is_shared": False,
+                            "weightage": W_PRINT_SIZE_UNIFORMITY
+                        },
+                        "discrete_letter": {
+                            "data": convert_numpy_types(letter_discreteness_results),
+                            "is_dominant": False,
+                            "is_shared": False,
+                            "weightage": W_PRINT_DISCRETE
+                        }
+                    },
+                    "shorthand": {
+                        "curve_smoothness": {
+                            "data": convert_numpy_types(smooth_curves_results),
+                            "is_dominant": False,
+                            "is_shared": False,
+                            "weightage": W_SHORTHAND_SMOOTHNESS
+                        },
+                        "stroke_terminal": {
+                            "data": convert_numpy_types(stroke_terminal_results),
+                            "is_dominant": False,
+                            "is_shared": False,
+                            "weightage": W_SHORTHAND_TERMINAL
+                        },
+                        "symbol_density": {
+                            "data": convert_numpy_types(symbol_density_results),
+                            "is_dominant": False,
+                            "is_shared": False,
+                            "weightage": W_SHORTHAND_DENSITY
+                        }
+                    }
                 },
-                "calligraphic": {
-                    "continuous_part_coverage": convert_numpy_types(coverage_results),
-                    "right_angle_corner_detection": convert_numpy_types(right_angle_results),
-                    "stroke_width_variation": convert_numpy_types(stroke_width_results),
-                },
-                "cursive": {
-                    "stroke_connectivity": convert_numpy_types(connectivity_results),
-                    "enclosed_loop_ratio": convert_numpy_types(loop_results),
-                    "curvature_continuity": convert_numpy_types(curvature_results),
-                    "stroke_consistency": convert_numpy_types(consistency_results),
-                },
-                "italic": {
-                    "vertical_stroke_proportion": convert_numpy_types(vertical_stroke_results),
-                    "slant_angle": convert_numpy_types(slant_angle_results),
-                    "inter_letter_spacing": convert_numpy_types(spacing_results),
-                },
-                "print": {
-                    "vertical_alignment": convert_numpy_types(vertical_alignment_results),
-                    "letter_size_uniformity": convert_numpy_types(letter_size_results),
-                    "discrete_letter": convert_numpy_types(letter_discreteness_results),
-                },
-                "shorthand": {
-                    # Removed: "stroke_continuity": convert_numpy_types(shorthand_continuity_results),
-                    "curve_smoothness": convert_numpy_types(smooth_curves_results),
-                    "stroke_terminal": convert_numpy_types(stroke_terminal_results),
-                    "symbol_density": convert_numpy_types(symbol_density_results),
+                # Include the calculated style scores
+                "handwriting_style_scores": {
+                    "block_lettering": {
+                        "score": float(block_lettering_style_score),
+                        "component_scores": {
+                            "angularity": float(block_angularity_feature_score),
+                            "aspect_ratio_consistency": float(block_aspect_ratio_consistency_score),
+                            "loop_presence_inverse": float(block_loop_feature_score),
+                        }
+                    },
+                    "cursive": {
+                        "score": float(cursive_style_score),
+                        "component_scores": {
+                            "curvature_continuity": float(cursive_curvature_feature_score),
+                            "stroke_connectivity": float(cursive_connectivity_feature_score),
+                            "enclosed_loop_ratio": float(cursive_loop_feature_score),
+                            "stroke_consistency": float(cursive_consistency_feature_score),
+                        }
+                    },
+                    "calligraphic": {
+                        "score": float(calligraphic_style_score),
+                        "component_scores": {
+                            "coverage": float(calligraphic_coverage_feature_score),
+                            "right_angle_inverse": float(calligraphic_right_angle_feature_score),
+                            "stroke_width_variation": float(calligraphic_width_variation_score),
+                        }
+                    },
+                    "italic": {
+                        "score": float(italic_style_score),
+                        "component_scores": {
+                            "spacing_uniformity": float(italic_spacing_feature_score),
+                            "slant": float(italic_slant_feature_score),
+                            "vertical_proportion": float(italic_vertical_proportion_score),
+                        }
+                    },
+                    "shorthand": {
+                        "score": float(shorthand_style_score),
+                        "component_scores": {
+                            "curve_smoothness": float(shorthand_curve_smoothness_feature_score),
+                            # Removed: "stroke_continuity": float(shorthand_stroke_continuity_feature_score),
+                            "stroke_terminal": float(shorthand_stroke_terminal_feature_score),
+                            "symbol_density": float(shorthand_symbol_density_feature_score)
+                        }
+                    },
+                    "print": {
+                        "score": float(print_style_score),
+                        "component_scores": {
+                            "vertical_alignment": float(print_vertical_alignment_feature_score),
+                            "size_uniformity": float(print_size_uniformity_feature_score),
+                            "letter_discreteness": float(print_letter_discreteness_feature_score),
+                        }
+                    },
                 }
-            },
-            # Include the calculated style scores
-            "handwriting_style_scores": {
-                "block_lettering": {
-                    "score": float(block_lettering_style_score),
-                    "component_scores": {
-                        "angularity": float(block_angularity_feature_score),
-                        "aspect_ratio_consistency": float(block_aspect_ratio_consistency_score),
-                        "loop_presence_inverse": float(block_loop_feature_score),
-                    }
-                },
-                "cursive": {
-                    "score": float(cursive_style_score),
-                    "component_scores": {
-                        "curvature_continuity": float(cursive_curvature_feature_score),
-                        "stroke_connectivity": float(cursive_connectivity_feature_score),
-                        "enclosed_loop_ratio": float(cursive_loop_feature_score),
-                        "stroke_consistency": float(cursive_consistency_feature_score),
-                    }
-                },
-                "calligraphic": {
-                    "score": float(calligraphic_style_score),
-                    "component_scores": {
-                        "coverage": float(calligraphic_coverage_feature_score),
-                        "right_angle_inverse": float(calligraphic_right_angle_feature_score),
-                        "stroke_width_variation": float(calligraphic_width_variation_score),
-                    }
-                },
-                "italic": {
-                    "score": float(italic_style_score),
-                    "component_scores": {
-                        "spacing_uniformity": float(italic_spacing_feature_score),
-                        "slant": float(italic_slant_feature_score),
-                        "vertical_proportion": float(italic_vertical_proportion_score),
-                    }
-                },
-                "shorthand": {
-                    "score": float(shorthand_style_score),
-                    "component_scores": {
-                        "curve_smoothness": float(shorthand_curve_smoothness_feature_score),
-                        # Removed: "stroke_continuity": float(shorthand_stroke_continuity_feature_score),
-                        "stroke_terminal": float(shorthand_stroke_terminal_feature_score),
-                        "symbol_density": float(shorthand_symbol_density_feature_score)
-                    }
-                },
-                "print": {
-                    "score": float(print_style_score),
-                    "component_scores": {
-                        "vertical_alignment": float(print_vertical_alignment_feature_score),
-                        "size_uniformity": float(print_size_uniformity_feature_score),
-                        "letter_discreteness": float(print_letter_discreteness_feature_score),
-                    }
-                },
             }
-        }
         # Convert all results to Python native types before sending JSON
 
         return JSONResponse(content=response_data)

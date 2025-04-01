@@ -141,7 +141,7 @@ class VerticalStrokeAnalyzer:
 # === Example usage ===
 if __name__ == "__main__":
     # Example with file path
-    image_path = "../../atest/print2.png"
+    image_path = "../../atest/italic2.png"
     analyzer = VerticalStrokeAnalyzer(image_path, is_base64=False)
     results = analyzer.analyze(debug=True)
     print(results['metrics'])

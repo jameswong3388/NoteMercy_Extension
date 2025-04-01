@@ -390,7 +390,6 @@ class StrokeConnectivityAnalyzer:
                 except Exception as save_plot_err:
                     print(f"Warning: Failed to save plot to base64: {save_plot_err}")
                 finally:
-                    plt.show()
                     plt.close(fig)
 
             try:
