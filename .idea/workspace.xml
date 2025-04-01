@@ -4,7 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4416672d-0eaa-405a-8335-da3168bb08a5" name="Changes" comment="code refactor" />
+    <list default="true" id="4416672d-0eaa-405a-8335-da3168bb08a5" name="Changes" comment="code refactor">
+      <change beforePath="$PROJECT_DIR$/backend/atest/shorthand1.png" beforeDir="false" afterPath="$PROJECT_DIR$/backend/atest/shorthand1.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/lib_py/shorthand/Smooth_Curves.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/lib_py/shorthand/Smooth_Curves.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -26,12 +29,12 @@
     &quot;assignee&quot;: &quot;jameswong3388&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/jameswong3388/NoteMercy_Extension.git",
-    "accountId": "0606eda2-35a8-4499-93ea-7b2e05fa62ce"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/jameswong3388/NoteMercy_Extension.git&quot;,
+    &quot;accountId&quot;: &quot;0606eda2-35a8-4499-93ea-7b2e05fa62ce&quot;
   }
-}]]></component>
+}</component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 4
 }</component>
@@ -60,8 +63,8 @@
     "Python.vertical_alignment_consistency.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "main",
-    "last_opened_file_path": "C:/Users/Samson/Desktop/Coding/IPPR2/frontend",
+    "git-widget-placeholder": "samson",
+    "last_opened_file_path": "C:/Users/Samson/Desktop/Coding/IPPR/frontend",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -242,6 +245,7 @@
       <workItem from="1742977841342" duration="11000" />
       <workItem from="1742977855615" duration="13370000" />
       <workItem from="1743472031790" duration="203000" />
+      <workItem from="1743511426786" duration="132000" />
     </task>
     <task id="LOCAL-00001" summary="Initial project setup with configuration files, backend image processing scripts, and frontend UI components. Added various utility functions and established project structure.">
       <option name="closed" value="true" />
