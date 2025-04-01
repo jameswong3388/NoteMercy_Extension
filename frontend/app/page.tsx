@@ -631,19 +631,18 @@ export default function Home() {
                                             (selectedFeatureData as unknown as {
                                                 data: { graphs: string[] }
                                             }).data.graphs.length > 0 ? (
-                                                <div className="flex justify-center overflow-hidden">
-                                                    <PhotoView
-                                                        src={`data:image/png;base64,${(selectedFeatureData as unknown as {
-                                                            data: { graphs: string[] }
-                                                        }).data.graphs[0]}`}>
-                                                        <img
-                                                            src={`data:image/png;base64,${(selectedFeatureData as unknown as {
-                                                                data: { graphs: string[] }
-                                                            }).data.graphs[0]}`}
-                                                            alt={`${selectedFeature?.split('.')[1]} graph`}
-                                                            className="max-w-full object-contain max-h-[300px] cursor-zoom-in"
-                                                        />
-                                                    </PhotoView>
+                                                <div className="grid grid-cols-1 gap-6">
+                                                    {(selectedFeatureData as unknown as { data: { graphs: string[] } }).data.graphs.map((graph, index) => (
+                                                        <div key={index} className="flex justify-center overflow-hidden">
+                                                            <PhotoView src={`data:image/png;base64,${graph}`}>
+                                                                <img
+                                                                    src={`data:image/png;base64,${graph}`}
+                                                                    alt={`${selectedFeature?.split('.')[1]} graph ${index + 1}`}
+                                                                    className="max-w-full object-contain max-h-[300px] cursor-zoom-in"
+                                                                />
+                                                            </PhotoView>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             ) : (
                                                 <div className="text-center text-muted-foreground p-8">
