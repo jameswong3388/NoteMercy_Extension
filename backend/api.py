@@ -602,7 +602,7 @@ async def analyze_image(request: ImageRequest):
                     "block_lettering": {
                         "angularity": {
                             "data": convert_numpy_types(angularity_results),
-                            "is_dominant": True,
+                            "is_dominant": False,
                             "is_shared": True,
                             "weightage": W_BLOCK_ANGULARITY
                         },
@@ -674,7 +674,7 @@ async def analyze_image(request: ImageRequest):
                         },
                         "slant_angle": {
                             "data": convert_numpy_types(slant_angle_results),
-                            "is_dominant": False,
+                            "is_dominant": True,
                             "is_shared": False,
                             "weightage": W_ITALIC_SLANT
                         },
@@ -715,7 +715,7 @@ async def analyze_image(request: ImageRequest):
                         "stroke_terminal": {
                             "data": convert_numpy_types(stroke_terminal_results),
                             "is_dominant": False,
-                            "is_shared": False,
+                            "is_shared": True,
                             "weightage": W_SHORTHAND_TERMINAL
                         },
                         "symbol_density": {
