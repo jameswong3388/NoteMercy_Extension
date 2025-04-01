@@ -126,7 +126,7 @@ class EnclosedLoopAnalyzer:
     def compute_loopiness(self):
         """
         Compute loop metrics for each detected word and overall.
-        Returns a dictionary of results.
+        Returns a list of loopiness ratios for each word.
         """
         total_outer_count = 0
         total_inner_count = 0
@@ -169,6 +169,45 @@ class EnclosedLoopAnalyzer:
             "word_count": len(self.words)
         }
         return word_loopiness
+
+    def plot_enclosed_loop_distribution(self, word_loopiness):
+        """
+        Plots a histogram of loopiness ratios for words with overlays for the mean and standard deviation.
+
+        Parameters:
+            word_loopiness (list): List of loopiness ratios (inner/outer contours) per word.
+
+        Returns:
+            str: Base64 encoded PNG image of the plot.
+        """
+        plt.figure(figsize=(8, 6))
+
+        # Plot histogram of loopiness ratios
+        n, bins, patches = plt.hist(word_loopiness, bins=20, alpha=0.7, color='skyblue', edgecolor='black')
+
+        # Calculate mean and standard deviation
+        mean_val = np.mean(word_loopiness)
+        std_val = np.std(word_loopiness)
+
+        # Overlay the mean and standard deviation boundaries
+        plt.axvline(mean_val, color='red', linestyle='dashed', linewidth=1, label=f'Mean: {mean_val:.2f}')
+        plt.axvline(mean_val + std_val, color='green', linestyle='dashed', linewidth=1, label=f'+1 Std: {std_val:.2f}')
+        plt.axvline(mean_val - std_val, color='green', linestyle='dashed', linewidth=1)
+
+        # Labeling the plot
+        plt.xlabel('Loopiness Ratio (Inner/Outer Contours)')
+        plt.ylabel('Number of Words')
+        plt.title('Distribution of Enclosed Loopiness Across Words')
+        plt.legend()
+        plt.tight_layout()
+
+        # Save the plot to a BytesIO buffer and encode it in base64
+        buf = BytesIO()
+        plt.savefig(buf, format='png', bbox_inches='tight')
+        plt.close()
+        buf.seek(0)
+        plot_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+        return plot_base64
 
     def analyze(self, debug=False):
         """
@@ -249,13 +288,18 @@ class EnclosedLoopAnalyzer:
             plot_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
             plt.close()
 
+            # Append the original visualization graph
             result['graphs'].append(plot_base64)
+
+            # Append the improved enclosed loop distribution histogram
+            enclosed_loop_graph = self.plot_enclosed_loop_distribution(word_loopiness)
+            result['graphs'].append(enclosed_loop_graph)
 
         return result
 
 
 if __name__ == "__main__":
-    # Example with file path
+    # Example with file path - adjust the image path as needed
     image_path = "../../atest/cursive2.jpg"
     analyzer = EnclosedLoopAnalyzer(image_path, is_base64=False)
     results = analyzer.analyze(debug=True)

@@ -111,94 +111,98 @@ class SlantAngleAnalyzer:
 
     def _generate_debug_plots(self, metrics):
         """
-        Generates a multi-panel figure visualizing the analysis including:
-         - Original image with detected lines overlay.
-         - Histogram of vertical slants.
-         - Box plot of vertical slants.
-         - A summary of computed metrics.
+        Generates four separate figures for a detailed analysis:
+          1. Detected Lines overlay on the original image.
+          2. Histogram of vertical slants with mean, median, and threshold lines.
+          3. Box plot of vertical slants with a threshold marker.
+          4. Cumulative distribution function (CDF) of vertical slants.
 
         Args:
             metrics (dict): The computed slant metrics.
 
         Returns:
-            list: A list containing a base64-encoded PNG of the debug plot.
+            list: A list of base64 encoded PNG images for each graph.
         """
-        # Create a copy of the original image to draw the detected lines.
+        graphs_base64 = []
+
+        # Graph 1: Detected Lines with Hough Transform Overlay
         vis_img = self.img.copy()
         if self.hough_lines is not None:
             for line in self.hough_lines:
                 x1, y1, x2, y2 = line[0]
-                cv2.line(vis_img, (x1, y1), (x2, y2), (0, 0, 255), 2)  # red lines
-
-        fig, axs = plt.subplots(2, 2, figsize=(15, 10))
-        fig.suptitle('Italic Detection Analysis', fontsize=16)
-
-        # Plot 1: Original image with detected lines.
-        axs[0, 0].imshow(cv2.cvtColor(vis_img, cv2.COLOR_BGR2RGB))
-        axs[0, 0].set_title("Detected Lines")
-        axs[0, 0].axis('off')
-
-        # Plot 2: Histogram of vertical slants.
-        axs[0, 1].hist(self.vertical_slants, bins=20, color='skyblue', alpha=0.8, edgecolor='black')
-        axs[0, 1].axvline(
-            x=metrics['vertical_slant'],
-            color='r',
-            linestyle='--',
-            linewidth=2,
-            label=f'Avg: {metrics["vertical_slant"]:.1f}°'
-        )
-        axs[0, 1].axvline(
-            x=metrics['italic_threshold'],
-            color='g',
-            linestyle=':',
-            linewidth=2,
-            label=f'Threshold: {metrics["italic_threshold"]}°'
-        )
-        axs[0, 1].set_title("Vertical Slant Distribution")
-        axs[0, 1].set_xlabel("Deviation from Vertical (°)")
-        axs[0, 1].set_ylabel("Frequency")
-        axs[0, 1].legend()
-        axs[0, 1].grid(axis='y', linestyle='--', alpha=0.6)
-
-        # Plot 3: Box Plot of vertical slants.
-        axs[1, 0].boxplot(self.vertical_slants, vert=False, showmeans=True, patch_artist=True,
-                          boxprops=dict(facecolor='lightblue'),
-                          medianprops=dict(color='red', linewidth=2),
-                          meanprops=dict(marker='D', markeredgecolor='black', markerfacecolor='red'))
-        axs[1, 0].axvline(
-            x=metrics['italic_threshold'],
-            color='g',
-            linestyle=':',
-            linewidth=2,
-            label=f'Threshold: {metrics["italic_threshold"]}°'
-        )
-        axs[1, 0].set_title("Vertical Slant Box Plot")
-        axs[1, 0].set_xlabel("Deviation from Vertical (°)")
-        axs[1, 0].set_yticks([])
-        axs[1, 0].legend(loc='lower right')
-        axs[1, 0].grid(axis='x', linestyle='--', alpha=0.6)
-
-        # Plot 4: Metrics Summary.
-        axs[1, 1].axis('off')
-        axs[1, 1].set_title("Analysis Metrics", pad=20)
-        metrics_text = (
-            f"Avg. Vertical Slant: {metrics['vertical_slant']:.2f}°\n"
-            f"Std Dev: {metrics['slant_std']:.2f}°\n"
-            f"Total Lines: {metrics['num_lines']}\n"
-            f"Italic Threshold: {metrics['italic_threshold']}°\n"
-            f"Italic Detected: {'Yes' if metrics['is_italic'] else 'No'}"
-        )
-        axs[1, 1].text(0.5, 0.5, metrics_text,
-                       ha='center', va='center', fontsize=12,
-                       bbox=dict(boxstyle='round,pad=0.5', fc='wheat', alpha=0.5))
-
-        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+                cv2.line(vis_img, (x1, y1), (x2, y2), (0, 0, 255), 2)
+        fig1 = plt.figure(figsize=(8, 6))
+        plt.imshow(cv2.cvtColor(vis_img, cv2.COLOR_BGR2RGB))
+        plt.title(f"Detected Lines (Total: {metrics['num_lines']})")
+        plt.axis('off')
         buf = BytesIO()
         plt.savefig(buf, format='png', bbox_inches='tight')
         buf.seek(0)
-        plot_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
-        plt.close(fig)
-        return [plot_base64]
+        graphs_base64.append(base64.b64encode(buf.getvalue()).decode('utf-8'))
+        plt.close(fig1)
+
+        # Graph 2: Histogram of Vertical Slants with Annotations
+        fig2 = plt.figure(figsize=(8, 6))
+        bins = 20
+        plt.hist(self.vertical_slants, bins=bins, color='skyblue', alpha=0.8, edgecolor='black')
+        mean_slant = np.mean(self.vertical_slants) if self.vertical_slants else 0
+        median_slant = np.median(self.vertical_slants) if self.vertical_slants else 0
+        plt.axvline(x=mean_slant, color='r', linestyle='--', linewidth=2, label=f'Mean: {mean_slant:.1f}°')
+        plt.axvline(x=median_slant, color='b', linestyle='-', linewidth=2, label=f'Median: {median_slant:.1f}°')
+        plt.axvline(x=metrics['italic_threshold'], color='g', linestyle=':', linewidth=2,
+                    label=f'Threshold: {metrics["italic_threshold"]}°')
+        plt.xlabel("Deviation from Vertical (°)")
+        plt.ylabel("Frequency")
+        plt.title("Histogram of Vertical Slants")
+        plt.legend()
+        plt.grid(axis='y', linestyle='--', alpha=0.6)
+        buf = BytesIO()
+        plt.savefig(buf, format='png', bbox_inches='tight')
+        buf.seek(0)
+        graphs_base64.append(base64.b64encode(buf.getvalue()).decode('utf-8'))
+        plt.close(fig2)
+
+        # Graph 3: Box Plot of Vertical Slants with Threshold Annotation
+        fig3 = plt.figure(figsize=(8, 4))
+        plt.boxplot(self.vertical_slants, vert=False, showmeans=True, patch_artist=True,
+                    boxprops=dict(facecolor='lightblue'),
+                    medianprops=dict(color='red', linewidth=2),
+                    meanprops=dict(marker='D', markeredgecolor='black', markerfacecolor='red'))
+        plt.axvline(x=metrics['italic_threshold'], color='g', linestyle=':', linewidth=2,
+                    label=f'Threshold: {metrics["italic_threshold"]}°')
+        plt.xlabel("Deviation from Vertical (°)")
+        plt.title("Box Plot of Vertical Slants")
+        plt.legend(loc='lower right')
+        plt.grid(axis='x', linestyle='--', alpha=0.6)
+        buf = BytesIO()
+        plt.savefig(buf, format='png', bbox_inches='tight')
+        buf.seek(0)
+        graphs_base64.append(base64.b64encode(buf.getvalue()).decode('utf-8'))
+        plt.close(fig3)
+
+        # Graph 4: Cumulative Distribution Function (CDF) of Vertical Slants
+        fig4 = plt.figure(figsize=(8, 6))
+        if self.vertical_slants:
+            sorted_slants = np.sort(self.vertical_slants)
+            cdf = np.arange(1, len(sorted_slants) + 1) / len(sorted_slants)
+            plt.plot(sorted_slants, cdf, marker='o', linestyle='-', color='purple')
+            plt.axvline(x=mean_slant, color='r', linestyle='--', linewidth=2, label=f'Mean: {mean_slant:.1f}°')
+            plt.axvline(x=metrics['italic_threshold'], color='g', linestyle=':', linewidth=2,
+                        label=f'Threshold: {metrics["italic_threshold"]}°')
+        else:
+            plt.text(0.5, 0.5, "No slant data available", horizontalalignment='center', verticalalignment='center')
+        plt.xlabel("Deviation from Vertical (°)")
+        plt.ylabel("Cumulative Proportion")
+        plt.title("Cumulative Distribution of Vertical Slants")
+        plt.legend()
+        plt.grid(linestyle='--', alpha=0.6)
+        buf = BytesIO()
+        plt.savefig(buf, format='png', bbox_inches='tight')
+        buf.seek(0)
+        graphs_base64.append(base64.b64encode(buf.getvalue()).decode('utf-8'))
+        plt.close(fig4)
+
+        return graphs_base64
 
     def _encode_image_to_base64(self, image):
         """
