@@ -6,6 +6,35 @@
   .text-balance {
     text-wrap: balance;
   }
+  @keyframes tab-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes tab-slide-in {
+    from {
+      opacity: 0;
+      transform: translateX(15px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  .animate-tab-fade-in {
+    animation: tab-fade-in 0.3s ease-out forwards;
+  }
+  
+  .animate-tab-slide-in {
+    animation: tab-slide-in 0.3s ease-out forwards;
+  }
 }
 
 

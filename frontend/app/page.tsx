@@ -15,6 +15,7 @@ import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/
 import {toast} from "sonner";
 import {PhotoProvider, PhotoView} from "react-photo-view";
 import "react-photo-view/dist/react-photo-view.css";
+import {cn} from "@/lib/utils";
 
 interface HandwritingStyle {
     score: number;
@@ -313,7 +314,14 @@ export default function Home() {
                                             </TabsList>
 
                                             {featureGroups && Object.entries(featureGroups).map(([group, featureList]) => (
-                                                <TabsContent key={group} value={group} className="space-y-4">
+                                                <TabsContent 
+                                                    key={group} 
+                                                    value={group} 
+                                                    className={cn(
+                                                        "space-y-4",
+                                                        activeTab === group ? "animate-tab-slide-in" : ""
+                                                    )}
+                                                >
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         {featureList.map((feature) => (
                                                             <Card
@@ -373,7 +381,7 @@ export default function Home() {
                                     {features ? (
                                         <div className="space-y-6">
                                             {/* Handwriting Style Scores */}
-                                            <Card>
+                                            <Card className="animate-tab-fade-in">
                                                 <CardHeader className="pb-2">
                                                     <CardTitle className="text-lg">Handwriting Style Analysis</CardTitle>
                                                     <CardDescription>Analysis of your handwriting style characteristics</CardDescription>
@@ -433,7 +441,7 @@ export default function Home() {
                                                 </CardContent>
                                             </Card>
 
-                                            <Card>
+                                            <Card className="animate-tab-fade-in" style={{animationDelay: "0.1s"}}>
                                                 <CardHeader className="pb-2">
                                                     <CardTitle className="text-lg">Primary Style</CardTitle>
                                                     <CardDescription>Your dominant handwriting
@@ -553,7 +561,7 @@ export default function Home() {
                             </DialogHeader>
                             <ScrollArea className="mt-4 max-h-[calc(90vh-80px)]">
                                 {selectedFeatureData && (
-                                    <div className="space-y-6">
+                                    <div className="space-y-6 animate-tab-fade-in">
                                         {/* 1. Preprocessed Image Section (if available) */}
                                         {(selectedFeatureData as unknown as { data: { preprocessed_image: string } })?.data?.preprocessed_image && (
                                             <div className="bg-card border rounded-lg p-4">
