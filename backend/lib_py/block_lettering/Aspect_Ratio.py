@@ -315,7 +315,7 @@ class AspectRatioAnalyzer:
 # === Example usage ===
 if __name__ == "__main__":
     # --- Configuration ---
-    image_path = r"C:\Users\Samson\Desktop\Coding\IPPR\NoteMercy_Extension\backend\atest\block-letters.jpg"  # <-- CHANGE THIS PATH if needed
+    image_path = r"C:\Users\Samson\Desktop\Coding\IPPR\backend\atest\block-letters.jpg"  # <-- CHANGE THIS PATH if needed
     analyzer = AspectRatioAnalyzer(image_path, is_base64=False)
     results = analyzer.analyze(debug=True)
     # print(results)

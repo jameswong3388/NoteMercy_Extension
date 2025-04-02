@@ -67,10 +67,6 @@ class StrokeSmoothnessAnalyzer:
         Stores the final binary result (white strokes=255, black background=0)
         in self.binary_image.
         """
-        if self.img_color is None:
-            # Cannot proceed without an image loaded during init
-            self.binary_image = None
-            return
 
         # --- Fixed Preprocessing Parameters ---
         _GAUSSIAN_BLUR_KSIZE = 3
@@ -215,7 +211,8 @@ class StrokeSmoothnessAnalyzer:
             theta_unwrapped = np.unwrap(theta_rad)  # Handles jumps from -pi to +pi
 
             # Ensure enough points for diff
-            if len(theta_unwrapped) < 2: return
+            if len(theta_unwrapped) < 2:
+                return
 
             dTheta = np.diff(theta_unwrapped)  # Angle change between consecutive points
             self.analysis_plot_data['angle_changes'] = dTheta

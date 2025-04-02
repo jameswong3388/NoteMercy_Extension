@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 from lib_py.block_lettering.Angularity import AngularityAnalyzer
 from lib_py.block_lettering.Aspect_Ratio import AspectRatioAnalyzer
-from lib_py.block_lettering.Loop_Detection import LoopDetectionAnalyzer
+from lib_py.block_lettering.Loop_Percentage import LoopDetectionAnalyzer
 from lib_py.calligraphic.Continuous_Part_Coverage import ContinuousPartCoverageAnalyzer
 from lib_py.calligraphic.Right_Angle_Density import RightAngleAnalyzer
 from lib_py.calligraphic.Stroke_Width_Variation import StrokeWidthAnalyzer
@@ -133,16 +133,16 @@ async def analyze_image(request: ImageRequest):
         block_loop_metrics = loop_detection_results.get('metrics', {})
 
         # --- Angularity Score ---
-        block_median_angle = block_angularity_metrics.get('median_turning_angle')
+        block_avg_angle = block_angularity_metrics.get('avg_turning_angle')
         block_shape_count = block_angularity_metrics.get('shape_count', 0)
         block_angularity_feature_score = 0.0  # Default score
-        if block_shape_count > 0 and block_median_angle is not None and block_median_angle > 0:
-            if 80.0 <= block_median_angle <= 100.0:  # Ideal range for blocky letters
+        if block_shape_count > 0 and block_avg_angle is not None and block_avg_angle > 0:
+            if 80.0 <= block_avg_angle <= 100.0:  # Ideal range for blocky letters
                 block_angularity_feature_score = 1.0
-            elif block_median_angle >= 135.0 or block_median_angle <= 45.0:  # Very curved or very sharp (less blocky)
+            elif block_avg_angle >= 135.0 or block_avg_angle <= 45.0:  # Very curved or very sharp (less blocky)
                 block_angularity_feature_score = 0.0
             else:
-                deviation_from_90 = abs(block_median_angle - 90.0)
+                deviation_from_90 = abs(block_avg_angle - 90.0)
                 block_angularity_feature_score = max(0.0, 1.0 - (deviation_from_90 / 45.0))
 
         # --- Aspect Ratio Consistency Score ---
@@ -165,7 +165,7 @@ async def analyze_image(request: ImageRequest):
 
         # --- Loop Presence Score (Inverse) ---
         block_percentage_loops = block_loop_metrics.get('percentage_shapes_with_loops', 0.0)
-        block_loop_feature_score = 1.0 - (block_percentage_loops / 100.0)
+        block_loop_feature_score = 1.0 - 0.5 * (block_percentage_loops / 100.0)
         block_loop_feature_score = max(0.0, min(1.0, block_loop_feature_score))
 
         # --- Combined Block Lettering Style Score ---
