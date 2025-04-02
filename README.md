@@ -51,7 +51,6 @@ The frontend will be available at `http://localhost:3000`
 4. Run the backend server:
    ```bash
    python api.py
-   # or the specific command to run your backend
    ```
    
 ### Additional Notes
