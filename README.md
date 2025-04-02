@@ -1,6 +1,49 @@
+# NoteMercy Extension
+
 <img width="1728" alt="Screenshot 2025-04-01 at 9 18 44 AM" src="https://github.com/user-attachments/assets/648d9bba-d21c-4b6b-aa26-5934839e5f33" />
 
-## Project Setup
+## Overview
+
+NoteMercy Extension is a sophisticated handwriting analysis and recognition system that can identify and analyze various styles of handwriting. The system provides detailed analysis of different handwriting characteristics including print, cursive, italic, calligraphic, shorthand, and block writing styles.
+
+## Features
+
+- **Multiple Handwriting Style Analysis**
+  - Print Writing
+  - Cursive Writing
+  - Italic Writing
+  - Calligraphic Writing
+  - Shorthand Writing
+  - Block Writing
+
+- **Advanced Analysis Components**
+  - Angularity Analysis
+  - Aspect Ratio Analysis
+  - Loop Detection
+  - Stroke Width Variation
+  - Curvature Analysis
+  - Letter Spacing Analysis
+  - And more specialized analyzers for each writing style
+
+## Project Structure
+
+```
+NoteMercy_Extension/
+├── frontend/           # Next.js frontend application
+├── backend/           # Python FastAPI backend
+│   ├── atest/        # Test datasets
+│   ├── lib_py/       # Analysis libraries
+│   └── api.py        # Main API server
+└── README.md
+```
+
+## Prerequisites
+
+- Node.js 16.x or later
+- Python 3.8 or later
+- npm or yarn package manager
+
+## Installation
 
 ### Frontend Setup
 
@@ -32,7 +75,7 @@ The frontend will be available at `http://localhost:3000`
    cd backend
    ```
 
-2. Create a virtual environment (recommended) or you can use your own setup:
+2. Create and activate a virtual environment:
    ```bash
    python -m venv venv
    
@@ -52,16 +95,10 @@ The frontend will be available at `http://localhost:3000`
    ```bash
    python api.py
    ```
-   
-### Additional Notes
 
-- Make sure you have Node.js (16.x or later) installed for the frontend
-- Python 3.8+ is required for the backend
-- Both frontend and backend servers need to be running for the application to work properly
+## Test Datasets
 
-## Datasets
-
-The project includes sample test images available in the `/backend/atest` folder. The test dataset consists of various handwriting styles:
+The project includes sample test images in the `/backend/atest` folder demonstrating various handwriting styles:
 
 - **Print Writing**: `print.jpg`, `print2.png`
 - **Cursive Writing**: `cursive2.png`, `cursive3.jpg`, `cursive4.png`
@@ -71,3 +108,14 @@ The project includes sample test images available in the `/backend/atest` folder
 - **Block Writing**: `block1.png`, `block2.png`, `block3.png`
 
 These images serve as test cases for the handwriting recognition system and demonstrate the system's capability to handle various writing styles.
+
+## Development Notes
+
+- Both frontend and backend servers must be running for the application to function properly
+- The backend API is built with FastAPI and includes CORS support for frontend communication
+- The frontend is built with Next.js and uses modern web technologies including Tailwind CSS
+- The system implements various analyzers for different aspects of handwriting analysis
+
+## Contributing
+
+Feel free to submit issues and enhancement requests!
