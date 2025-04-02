@@ -85,9 +85,6 @@ class StrokeTerminalAnalyzer:
         Stores skeleton in self.skeleton and endpoints in self.endpoints.
         Requires scikit-image.
         """
-        if self.binary_image is None:
-            raise RuntimeError("Preprocessing must be run before finding endpoints.")
-
         # --- Fixed Endpoint Finding Parameters ---
         _SKELETON_PAD_VALUE = 0       # Value used for padding border (0=black)
         _ENDPOINT_NEIGHBOR_COUNT = 1  # An endpoint has exactly this many neighbors
@@ -336,7 +333,7 @@ class StrokeTerminalAnalyzer:
 # === Example usage (Updated) ===
 if __name__ == "__main__":
     # --- Image Selection ---
-    image_path = r"C:\Users\Samson\Desktop\Coding\IPPR\NoteMercy_Extension\backend\atest\cursive2.png"
+    image_path = r"C:\Users\Samson\Desktop\Coding\IPPR\backend\atest\cursive2.png"
     analyzer = StrokeTerminalAnalyzer(image_path, is_base64=False)
     results = analyzer.analyze(debug=True)
 

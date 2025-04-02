@@ -53,9 +53,6 @@ class AngularityAnalyzer:
         """
         Applies preprocessing: Grayscale, Blur, Thresholding.
         Stores results in self.gray_image and self.binary_image.
-
-        Parameters:
-            blur_ksize (int): Kernel size for Gaussian Blur (odd number > 1). 0 or 1 disables blur.
         """
         # --- Fixed Preprocessing Parameters ---
         _BLUR_KSIZE = 3  # Kernel size for Gaussian Blur (must be odd > 1, or <=1 to disable)

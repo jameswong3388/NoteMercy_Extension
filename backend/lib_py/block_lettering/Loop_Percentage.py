@@ -219,7 +219,7 @@ class LoopDetectionAnalyzer:
         plt.subplot(2, 2, 2)
         if self.binary_image is not None:
             plt.imshow(self.binary_image, cmap='gray')
-            plt.title(f"Preprocessed (Blur K={BLUR_KSIZE_DISPLAY}, Otsu)")
+            plt.title(f"Preprocessed Image")
         else:
             plt.title("Preprocessed Image (Not Available)")
         plt.axis('off')
@@ -292,7 +292,7 @@ class LoopDetectionAnalyzer:
 # === Example usage ===
 if __name__ == "__main__":
     # --- Image Selection ---
-    image_path = r"C:\Users\Samson\Desktop\Coding\IPPR\NoteMercy_Extension\backend\atest\calligraphic.png"
+    image_path = r"C:\Users\Samson\Desktop\Coding\IPPR\backend\atest\block1.png"
     analyzer = LoopDetectionAnalyzer(image_path, is_base64=False)
     results = analyzer.analyze(debug=True)
 

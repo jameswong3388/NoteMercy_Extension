@@ -74,7 +74,7 @@ class SymbolDensityAnalyzer:
         gray_image = cv2.cvtColor(self.img_color, cv2.COLOR_BGR2GRAY)
         processed = gray_image.copy()
 
-        # 2. Gaussian Blur (Optional)
+        # 2. Gaussian Blur
         if _BLUR_KSIZE > 1:
             ksize = _BLUR_KSIZE if _BLUR_KSIZE % 2 != 0 else _BLUR_KSIZE + 1  # Ensure odd
             processed = cv2.GaussianBlur(processed, (ksize, ksize), 0)
@@ -82,16 +82,11 @@ class SymbolDensityAnalyzer:
         # 3. Thresholding
         ret, self.binary_image = cv2.threshold(processed, _THRESH_VALUE, _THRESH_MAX_VALUE, _THRESH_TYPE)
 
-    def calculate_density(self):
+    def _calculate_density(self):
         """
         Calculates the overall stroke density for the entire resized image.
         Density = (Total number of stroke pixels) / (Total fixed image area).
         Optionally finds contours for visualization purposes.
-
-        Returns:
-            tuple: (metrics_dict, plot_data_dict)
-                   metrics_dict contains the overall density and pixel counts.
-                   plot_data_dict contains contours found (if any).
         """
         metrics = {
             'total_image_pixels': self.image_width * self.image_height,
@@ -142,13 +137,6 @@ class SymbolDensityAnalyzer:
         Generates visualization plots showing the resized image, binary image,
         and contours found. Highlights the overall stroke density.
         Uses fixed display parameters.
-
-        Args:
-            metrics (dict): Dictionary of calculated metrics.
-            plot_data (dict): Dictionary containing contours for plotting.
-
-        Returns:
-            list: List containing base64 encoded string of the visualization plot.
         """
         # --- Fixed Visualization Parameters ---
         FIGURE_SIZE = (12, 6)  # Adjusted figure size
@@ -205,20 +193,11 @@ class SymbolDensityAnalyzer:
     def analyze(self, debug=False):
         """
         Orchestrates the overall stroke density analysis process on the resized image.
-
-        Args:
-            debug (bool): If True, generates and includes visualization graphs.
-
-        Returns:
-            dict: A dictionary containing:
-                  'metrics': The calculated overall density metrics.
-                  'preprocessed_image': Base64 encoded string of the binary image.
-                  'graphs': List containing base64 encoded visualization(s) if debug=True.
         """
         try:
             self._reset_analysis_data()  # Resets data, image already resized in init
             self.preprocess_image()  # Preprocess the resized image
-            metrics, plot_data = self.calculate_density()  # Calculate density on resized binary img
+            metrics, plot_data = self._calculate_density()  # Calculate density on resized binary img
 
             result = {'metrics': metrics, 'graphs': []}
 
@@ -254,7 +233,7 @@ class SymbolDensityAnalyzer:
 # === Example Usage ===
 if __name__ == "__main__":
     # Use a sample image path - CHANGE THIS TO YOUR IMAGE
-    image_path = r"C:\Users\Samson\Desktop\Coding\IPPR\NoteMercy_Extension\backend\atest\shorthand1.png"
+    image_path = r"C:\Users\Samson\Desktop\Coding\IPPR\backend\atest\shorthand1.png"
     analyzer = SymbolDensityAnalyzer(image_path, is_base64=False)
     results = analyzer.analyze(debug=True)
 
